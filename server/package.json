@@ -1,0 +1,17 @@
+{
+  "name": "ivla-server",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "IVLA backend - Phase 1 health-check only",
+  "scripts": {
+    "dev": "node index.js",
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^18.0.1",
+    "express": "^4.21.2",
+    "express-rate-limit": "^8.7.0"
+  }
+}

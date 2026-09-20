@@ -1,0 +1,557 @@
+:root {
+  --ivla-navy: #1e2a4a;
+  --ivla-accent: #4f46e5;
+  --ivla-grey: #6b7280;
+  --ivla-toolbar-bg: #ffffff;
+  --ivla-shadow: 0 8px 32px rgba(15, 23, 42, 0.16);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.ivla-root {
+  position: fixed;
+  inset: 0;
+  background: #ffffff;
+}
+
+/* Thin dark line at the very top of the page. */
+.ivla-top-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #111827;
+  z-index: 20;
+}
+
+/* IVLA wordmark: small, bold, letter-spaced, grey, top-left. */
+.ivla-wordmark {
+  position: absolute;
+  top: 14px;
+  left: 18px;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.28em;
+  color: #9ca3af;
+  user-select: none;
+  z-index: 20;
+}
+
+.ivla-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: crosshair;
+  display: block;
+  background: #ffffff;
+}
+
+/* ---------- floating pill toolbar ---------- */
+.ivla-toolbar-zone {
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  z-index: 30;
+}
+
+.ivla-toolbar {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  background: var(--ivla-toolbar-bg);
+  border-radius: 22px;
+  box-shadow: var(--ivla-shadow);
+  padding: 8px 10px;
+  border: 1px solid #f1f5f9;
+}
+
+.ivla-tool {
+  min-width: 64px;
+  min-height: 64px;
+  border: 0;
+  background: transparent;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: #111827;
+  cursor: pointer;
+  padding: 8px 10px;
+}
+
+.ivla-tool-label {
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 500;
+}
+
+.ivla-tool:hover:not(:disabled) {
+  background: #f3f4f6;
+}
+
+/* Active tool: dark navy filled rounded background, white icon+label. */
+.ivla-tool.is-active {
+  background: var(--ivla-navy);
+  color: #ffffff;
+}
+
+/* Disabled (Undo/Redo with empty stacks): greyed, not clickable. */
+.ivla-tool:disabled {
+  color: #c4c9d4;
+  cursor: default;
+  background: transparent;
+}
+
+.ivla-tool:focus-visible,
+.ivla-shape-btn:focus-visible,
+.ivla-btn-primary:focus-visible,
+.ivla-btn-secondary:focus-visible,
+.ivla-btn-danger:focus-visible,
+.ivla-capture-x:focus-visible {
+  outline: 2px solid var(--ivla-accent);
+  outline-offset: 2px;
+}
+
+.ivla-divider {
+  width: 1px;
+  background: #e5e7eb;
+  margin: 10px 6px;
+}
+
+/* Shape sub-row above the toolbar. */
+.ivla-shape-row {
+  display: flex;
+  gap: 6px;
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: var(--ivla-shadow);
+  padding: 6px;
+  border: 1px solid #f1f5f9;
+}
+
+.ivla-shape-btn {
+  min-width: 64px;
+  min-height: 48px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  color: #111827;
+}
+
+.ivla-shape-btn.is-active {
+  background: var(--ivla-navy);
+  color: #fff;
+}
+
+/* Other popover. */
+.ivla-other-wrap {
+  position: relative;
+  display: flex;
+}
+
+.ivla-popover {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: var(--ivla-shadow);
+  border: 1px solid #f1f5f9;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 220px;
+}
+
+.ivla-swatches {
+  display: flex;
+  gap: 10px;
+}
+
+.ivla-swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid #e5e7eb;
+  cursor: pointer;
+  padding: 0;
+}
+
+.ivla-swatch.is-active {
+  border-color: var(--ivla-navy);
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--ivla-navy);
+}
+
+.ivla-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: #374151;
+}
+
+.ivla-slider-row input {
+  flex: 1;
+}
+
+.ivla-slider-val {
+  min-width: 42px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Clear confirm. */
+.ivla-confirm {
+  position: absolute;
+  left: 50%;
+  bottom: 120px;
+  transform: translateX(-50%);
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: var(--ivla-shadow);
+  border: 1px solid #f1f5f9;
+  padding: 14px 18px;
+  z-index: 40;
+  text-align: center;
+}
+
+.ivla-confirm p {
+  margin: 0 0 10px;
+  font-size: 14px;
+}
+
+.ivla-confirm-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+/* Capture preview card. */
+.ivla-capture {
+  position: absolute;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: var(--ivla-shadow);
+  border: 1px solid #e5e7eb;
+  padding: 12px;
+  z-index: 35;
+}
+
+.ivla-capture-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  padding-right: 24px;
+}
+
+.ivla-capture-x {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 0;
+  background: #f3f4f6;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ivla-capture-img {
+  width: 100%;
+  max-height: 180px;
+  object-fit: contain;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  display: block;
+}
+
+.ivla-capture-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.ivla-btn-primary,
+.ivla-btn-secondary,
+.ivla-btn-danger {
+  min-height: 44px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  flex: 1;
+}
+
+.ivla-btn-primary {
+  background: var(--ivla-navy);
+  color: #fff;
+}
+
+.ivla-btn-secondary {
+  background: #f3f4f6;
+  color: #111827;
+  border-color: #e5e7eb;
+}
+
+.ivla-btn-danger {
+  background: #dc2626;
+  color: #fff;
+}
+
+.ivla-btn-primary:disabled,
+.ivla-btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* Toast. */
+.ivla-toast {
+  position: absolute;
+  left: 50%;
+  bottom: 120px;
+  transform: translateX(-50%);
+  background: #111827;
+  color: #fff;
+  font-size: 14px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  box-shadow: var(--ivla-shadow);
+  z-index: 50;
+  white-space: nowrap;
+}
+
+/* ---------- result card (Phase 2) ---------- */
+.ivla-grade-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #374151;
+  margin-top: 10px;
+}
+
+.ivla-grade-row select {
+  flex: 1;
+  min-height: 44px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  padding: 0 8px;
+  font-size: 14px;
+  background: #fff;
+  color: #111827;
+}
+
+.ivla-link {
+  border: 0;
+  background: none;
+  color: var(--ivla-accent);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 10px 4px;
+  min-height: 44px;
+  text-decoration: underline;
+}
+
+.ivla-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 6px;
+  text-align: center;
+}
+
+.ivla-loading p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.ivla-spinner {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 4px solid #e5e7eb;
+  border-top-color: var(--ivla-accent);
+  animation: ivla-spin 0.9s linear infinite;
+}
+
+@keyframes ivla-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ivla-slow {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.ivla-explanation {
+  font-size: 22px;
+  line-height: 1.4;
+  color: #111827;
+  margin: 0 0 10px;
+}
+
+.ivla-block {
+  font-size: 14px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  color: #1f2937;
+}
+
+.ivla-what {
+  font-size: 13px;
+  color: #374151;
+  margin: 4px 0 8px;
+}
+
+.ivla-what summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  color: var(--ivla-accent);
+}
+
+.ivla-what p {
+  margin: 4px 0;
+}
+
+.ivla-error-msg {
+  font-size: 14px;
+  color: #111827;
+  margin: 0 0 10px;
+}
+
+.ivla-note {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0 0 10px;
+}
+
+.ivla-type-label {
+  display: block;
+  font-size: 13px;
+  color: #374151;
+  margin: 8px 0 6px;
+}
+
+.ivla-textarea,
+.ivla-input {
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 15px;
+  font-family: inherit;
+  color: #111827;
+  background: #fff;
+}
+
+.ivla-textarea {
+  resize: vertical;
+}
+
+.ivla-usage {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #f1f5f9;
+  font-size: 12px;
+  color: #9ca3af;
+  text-align: center;
+}
+
+/* Type-instead entry: shown only while the AI tool is active and nothing is
+   circled, so typing works with NO captured image at all. */
+.ivla-type-fab {
+  position: absolute;
+  right: 18px;
+  bottom: 110px;
+  min-width: 64px;
+  min-height: 64px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  box-shadow: var(--ivla-shadow);
+  color: var(--ivla-navy);
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 18px;
+  cursor: pointer;
+  z-index: 30;
+}
+
+.ivla-type-fab span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--ivla-navy);
+  color: #fff;
+  font-size: 14px;
+}
+
+.ivla-type-fab:focus-visible {
+  outline: 2px solid var(--ivla-accent);
+  outline-offset: 2px;
+}
+
+.ivla-result .ivla-capture-actions .ivla-btn-primary,
+.ivla-result .ivla-capture-actions .ivla-btn-secondary,
+.ivla-loading .ivla-btn-secondary,
+.ivla-capture-actions .ivla-btn-primary,
+.ivla-capture-actions .ivla-btn-secondary {
+  min-height: 64px;
+}
