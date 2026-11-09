@@ -553,5 +553,220 @@ body {
 .ivla-loading .ivla-btn-secondary,
 .ivla-capture-actions .ivla-btn-primary,
 .ivla-capture-actions .ivla-btn-secondary {
-  min-height: 64px;
+  min-height: 48px;
+}
+
+/* ---------- Visual Discovery (Commons) ---------- */
+.ivla-capture--discovery {
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.ivla-discovery-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ivla-discovery-query {
+  font-size: 12px;
+  background: #f1f5f9;
+  border-radius: 6px;
+  padding: 6px 8px;
+  display: flex;
+  gap: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ivla-discovery-query-label {
+  font-weight: 600;
+  color: #475569;
+}
+
+.ivla-discovery-query-text {
+  color: #0f172a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ivla-discovery-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.ivla-discovery-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ivla-discovery-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.ivla-discovery-thumb-wrap {
+  position: relative;
+  width: 100%;
+  height: 120px;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.ivla-discovery-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #ffffff;
+}
+
+.ivla-discovery-thumb-fallback {
+  font-size: 11px;
+  color: #94a3b8;
+  padding: 8px;
+  text-align: center;
+}
+
+.ivla-discovery-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(15, 23, 42, 0.75);
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  backdrop-filter: blur(4px);
+}
+
+.ivla-discovery-info {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.ivla-discovery-item-title {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 0;
+  color: #1e293b;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ivla-discovery-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+  color: #64748b;
+  margin-top: auto;
+}
+
+.ivla-discovery-creator,
+.ivla-discovery-license {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ivla-discovery-license {
+  font-weight: 500;
+  color: #3b82f6;
+}
+
+.ivla-discovery-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.ivla-discovery-link {
+  font-size: 11px;
+  color: #64748b;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 4px;
+}
+
+.ivla-discovery-link:hover {
+  color: var(--ivla-navy);
+  text-decoration: underline;
+}
+
+.ivla-discovery-insert-btn {
+  background: var(--ivla-navy);
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.ivla-discovery-insert-btn:hover {
+  background: #0f172a;
+}
+
+.ivla-discovery-empty {
+  padding: 18px 8px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.ivla-discovery-empty-icon {
+  color: #94a3b8;
+}
+
+.ivla-discovery-empty-text {
+  font-size: 13px;
+  color: #475569;
+  margin: 0;
+}
+
+.ivla-discovery-footer {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ivla-discovery-custom-link {
+  font-size: 12px;
+  text-align: center;
+  padding: 6px;
+  min-height: auto;
 }

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { X, Type, Image as ImageIcon } from 'lucide-react';
+import { X, Type, Search, Sparkles } from 'lucide-react';
 import * as api from '../api/ivlaApi.js';
+import VisualDiscoveryPanel from './VisualDiscoveryPanel.jsx';
 
 const GRADES = [
   { value: 'auto', label: 'Auto' },
@@ -10,7 +11,6 @@ const GRADES = [
   { value: 'college', label: 'College' },
 ];
 
-// Views: preview -> loading -> result-text | error | low | type (+ result-image in step 8)
 export default function CapturePreview({
   capture,
   gradeLevel,
@@ -22,9 +22,10 @@ export default function CapturePreview({
   startInType = false,
 }) {
   const [view, setView] = useState(startInType ? 'type' : 'preview');
-  const [mode, setMode] = useState('text'); // which flow produced the current view
+  const [mode, setMode] = useState('text'); // 'text' | 'discover' | 'generate'
   const [step, setStep] = useState('');
   const [result, setResult] = useState(null);
+  const [discoveryData, setDiscoveryData] = useState(null);
   const [error, setError] = useState(null);
   const [lowInterp, setLowInterp] = useState(null);
   const [lowText, setLowText] = useState('');
@@ -80,14 +81,14 @@ export default function CapturePreview({
   const failOr = (err, signal) => {
     finishLoading();
     if (signal?.aborted || err?.code === 'ABORTED') {
-      setView('preview'); // cancelled: back quietly, no error
+      setView('preview');
       return;
     }
     setError(err);
     setView('error');
   };
 
-  // ---- text flow: interpret (honest step 1) then explain (honest step 2) ----
+  // ---- text flow: interpret then explain ----
   const startText = async () => {
     if (!capture?.dataUrl) {
       setMode('text');
@@ -119,39 +120,84 @@ export default function CapturePreview({
     }
   };
 
-  // ---- image flow: routes land in step 7; until then the error state applies ----
-  const startImage = async (fresh = false) => {
-    if (!capture?.dataUrl) {
-      setMode('image');
+  // ---- PRIMARY visual flow: Wikimedia Commons Visual Discovery ----
+  const startDiscover = async (cachedInterp = null) => {
+    if (!capture?.dataUrl && !cachedInterp) {
+      setMode('discover');
       setView('type');
       return;
     }
-    const signal = beginLoading('image', 'Reading your board...');
+    const signal = beginLoading('discover', 'Searching Wikimedia Commons visuals...');
     try {
-      const { interpretation, lowConfidence } = await api.interpret(
-        capture.dataUrl,
-        gradeLevel,
-        { signal }
-      );
-      if (lowConfidence) {
-        finishLoading();
-        setLowInterp(interpretation);
-        setLowText(interpretation?.transcription || interpretation?.concept || '');
-        setView('low');
-        return;
+      let interpretation = cachedInterp || result?.interpretation || null;
+      if (!interpretation) {
+        setStep('Reading your board...');
+        const interpRes = await api.interpret(capture.dataUrl, gradeLevel, { signal });
+        if (interpRes.lowConfidence) {
+          finishLoading();
+          setLowInterp(interpRes.interpretation);
+          setLowText(interpRes.interpretation?.transcription || interpRes.interpretation?.concept || '');
+          setView('low');
+          return;
+        }
+        interpretation = interpRes.interpretation;
       }
-      setStep('Drawing an illustration...');
-      // Reuse the interpretation we just read: the server skips a second
-      // vision call when it is provided. Regenerate passes fresh:true for a
-      // genuinely new image instead of the cached one.
-      const out = await api.imageFromImage(
-        capture.dataUrl,
+
+      setStep('Finding educational diagrams on Commons...');
+      const discovery = await api.discoverFromImage(
+        capture?.dataUrl || '',
         gradeLevel,
         { signal },
-        { interpretation, ...(fresh ? { fresh: true } : {}) }
+        { interpretation }
       );
+
       finishLoading();
-      setResult({ interpretation, ...out });
+      setDiscoveryData(discovery);
+      setResult((prev) => ({ ...prev, interpretation: discovery.interpretation || interpretation }));
+      setView('result-discovery');
+    } catch (err) {
+      failOr(err, signal);
+    }
+  };
+
+  // ---- SECONDARY image flow: AI custom illustration (Flux/Pollinations) ----
+  const startCustomImage = async (fresh = false) => {
+    if (!capture?.dataUrl && !result?.interpretation && !typeText) {
+      setMode('generate');
+      setView('type');
+      return;
+    }
+    const signal = beginLoading('generate', 'Generating custom illustration...');
+    try {
+      let interpretation = result?.interpretation || null;
+      if (!interpretation && capture?.dataUrl) {
+        setStep('Reading your board...');
+        const interpRes = await api.interpret(capture.dataUrl, gradeLevel, { signal });
+        if (interpRes.lowConfidence) {
+          finishLoading();
+          setLowInterp(interpRes.interpretation);
+          setLowText(interpRes.interpretation?.transcription || interpRes.interpretation?.concept || '');
+          setView('low');
+          return;
+        }
+        interpretation = interpRes.interpretation;
+      }
+
+      setStep('Drawing illustration with AI...');
+      let out;
+      if (capture?.dataUrl) {
+        out = await api.imageFromImage(
+          capture.dataUrl,
+          gradeLevel,
+          { signal },
+          { interpretation, ...(fresh ? { fresh: true } : {}) }
+        );
+      } else if (typeText) {
+        out = await api.imageFromText(typeText.trim(), gradeLevel, { signal });
+      }
+
+      finishLoading();
+      setResult((prev) => ({ ...prev, interpretation, ...out }));
       setView('result-image');
     } catch (err) {
       failOr(err, signal);
@@ -164,7 +210,7 @@ export default function CapturePreview({
       notify?.('Type the concept first — a word or two is enough.');
       return;
     }
-    const signal = beginLoading(mode, 'Writing the explanation...');
+    const signal = beginLoading('text', 'Writing the explanation...');
     try {
       const out = await api.textFromText(text, gradeLevel, { signal });
       finishLoading();
@@ -176,13 +222,31 @@ export default function CapturePreview({
     }
   };
 
-  const makeImageTyped = async () => {
+  const discoverTyped = async () => {
     const text = typeText.trim();
     if (!text) {
       notify?.('Type the concept first — a word or two is enough.');
       return;
     }
-    const signal = beginLoading('image', 'Drawing an illustration...');
+    const signal = beginLoading('discover', 'Searching Wikimedia Commons diagrams...');
+    try {
+      const discovery = await api.discoverFromText(text, gradeLevel, { signal });
+      finishLoading();
+      setDiscoveryData(discovery);
+      setResult((prev) => ({ ...prev, interpretation: discovery.interpretation }));
+      setView('result-discovery');
+    } catch (err) {
+      failOr(err, signal);
+    }
+  };
+
+  const makeCustomImageTyped = async () => {
+    const text = typeText.trim();
+    if (!text) {
+      notify?.('Type the concept first — a word or two is enough.');
+      return;
+    }
+    const signal = beginLoading('generate', 'Drawing an illustration with AI...');
     try {
       const out = await api.imageFromText(text, gradeLevel, { signal });
       finishLoading();
@@ -199,9 +263,24 @@ export default function CapturePreview({
       notify?.('Type what was on the board first.');
       return;
     }
-    if (mode === 'image') {
-      setTypeText(text);
-      const signal = beginLoading('image', 'Drawing an illustration...');
+    setTypeText(text);
+
+    if (mode === 'discover') {
+      const signal = beginLoading('discover', 'Searching Wikimedia Commons diagrams...');
+      try {
+        const discovery = await api.discoverFromText(text, gradeLevel, { signal });
+        finishLoading();
+        setDiscoveryData(discovery);
+        setResult((prev) => ({ ...prev, interpretation: discovery.interpretation }));
+        setView('result-discovery');
+      } catch (err) {
+        failOr(err, signal);
+      }
+      return;
+    }
+
+    if (mode === 'generate') {
+      const signal = beginLoading('generate', 'Drawing an illustration...');
       try {
         const out = await api.imageFromText(text, gradeLevel, { signal });
         finishLoading();
@@ -212,6 +291,7 @@ export default function CapturePreview({
       }
       return;
     }
+
     const signal = beginLoading('text', 'Writing the explanation...');
     try {
       const out = await api.textFromText(text, gradeLevel, { signal });
@@ -225,13 +305,13 @@ export default function CapturePreview({
   };
 
   const tryAgain = () => {
-    if (mode === 'image') startImage();
+    if (mode === 'discover') startDiscover();
+    else if (mode === 'generate') startCustomImage(true);
     else startText();
   };
 
-  // Generate text from the cached interpretation: no second board read.
   const generateTextFromCached = async () => {
-    const interp = result?.interpretation;
+    const interp = result?.interpretation || discoveryData?.interpretation;
     if (!interp) {
       startText();
       return;
@@ -248,15 +328,29 @@ export default function CapturePreview({
     }
   };
 
+  const handleInsertCommonsImage = (item) => {
+    const imgUrl = item.imageUrl || item.thumbnailUrl;
+    onAddImage?.(imgUrl, {
+      title: item.title,
+      creator: item.creator,
+      license: item.license,
+      licenseUrl: item.licenseUrl,
+      source: item.source,
+      pageUrl: item.pageUrl,
+    });
+  };
+
   const cancel = () => {
     cancelInflight();
     setView('preview');
   };
 
-  // ---- placement: below the lasso bounds, above if no room, kept on screen ----
+  // Card dimensions & placement
+  const isDiscoveryView = view === 'result-discovery';
+  const CARD_W = isDiscoveryView ? 420 : 320;
+  const CARD_H = isDiscoveryView ? 520 : 420;
+
   const bounds = capture?.bounds || null;
-  const CARD_W = 300;
-  const CARD_H = 420;
   const vw = typeof window !== 'undefined' ? window.innerWidth : 800;
   const vh = typeof window !== 'undefined' ? window.innerHeight : 600;
   let left = bounds ? bounds.x + bounds.w / 2 - CARD_W / 2 : vw / 2 - CARD_W / 2;
@@ -285,10 +379,10 @@ export default function CapturePreview({
 
   return (
     <div
-      className="ivla-capture"
+      className={`ivla-capture${isDiscoveryView ? ' ivla-capture--discovery' : ''}`}
       style={{ left, top, width: CARD_W }}
       role="dialog"
-      aria-label="AI result card"
+      aria-label="AI visual learning assistant"
     >
       <button type="button" className="ivla-capture-x" aria-label="Dismiss" onClick={onDismiss}>
         <X size={16} aria-hidden="true" />
@@ -302,16 +396,33 @@ export default function CapturePreview({
           )}
           {gradeSelect}
           <div className="ivla-capture-actions">
-            <button type="button" className="ivla-btn-primary" onClick={startText}>
-              <Type size={16} aria-hidden="true" />
-              Generate text
+            <button
+              type="button"
+              className="ivla-btn-primary"
+              onClick={() => startDiscover()}
+              title="Find educational diagrams on Wikimedia Commons"
+            >
+              <Search size={16} aria-hidden="true" />
+              Find visual
             </button>
-            <button type="button" className="ivla-btn-secondary" onClick={startImage}>
-              <ImageIcon size={16} aria-hidden="true" />
-              Generate image
+            <button
+              type="button"
+              className="ivla-btn-secondary"
+              onClick={startText}
+              title="Generate conceptual explanation"
+            >
+              <Type size={16} aria-hidden="true" />
+              Explain
             </button>
           </div>
-          <button type="button" className="ivla-link" onClick={() => { setMode('text'); setView('type'); }}>
+          <button
+            type="button"
+            className="ivla-link"
+            onClick={() => {
+              setMode('discover');
+              setView('type');
+            }}
+          >
             Type it instead
           </button>
         </>
@@ -324,7 +435,14 @@ export default function CapturePreview({
           {slow && (
             <p className="ivla-slow">
               Taking longer than usual...{' '}
-              <button type="button" className="ivla-link" onClick={() => { cancelInflight(); setView('type'); }}>
+              <button
+                type="button"
+                className="ivla-link"
+                onClick={() => {
+                  cancelInflight();
+                  setView('type');
+                }}
+              >
                 Type it instead
               </button>
             </p>
@@ -333,6 +451,18 @@ export default function CapturePreview({
             Cancel
           </button>
         </div>
+      )}
+
+      {view === 'result-discovery' && discoveryData && (
+        <VisualDiscoveryPanel
+          query={discoveryData.query}
+          results={discoveryData.results}
+          totalFound={discoveryData.totalFound}
+          onInsert={handleInsertCommonsImage}
+          onTryAgain={() => startDiscover()}
+          onGenerateCustom={() => startCustomImage()}
+          onDismiss={onDismiss}
+        />
       )}
 
       {view === 'result-text' && result && (
@@ -368,11 +498,18 @@ export default function CapturePreview({
             >
               Add to board
             </button>
-            <button type="button" className="ivla-btn-secondary" onClick={tryAgain}>
-              Try again
+            <button
+              type="button"
+              className="ivla-btn-secondary"
+              onClick={() => startDiscover(result.interpretation)}
+            >
+              <Search size={14} /> Find visual
             </button>
           </div>
           <div className="ivla-capture-actions">
+            <button type="button" className="ivla-btn-secondary" onClick={tryAgain}>
+              Try again
+            </button>
             <button type="button" className="ivla-btn-secondary" onClick={onDismiss}>
               Dismiss
             </button>
@@ -385,7 +522,7 @@ export default function CapturePreview({
 
       {view === 'result-image' && result && (
         <div className="ivla-result">
-          <div className="ivla-capture-title">Illustration</div>
+          <div className="ivla-capture-title">Custom AI Illustration</div>
           {result.imageDataUrl && (
             <img
               className="ivla-capture-img"
@@ -393,30 +530,27 @@ export default function CapturePreview({
               alt="AI-generated illustration"
             />
           )}
-          <p className="ivla-note">AI illustration. May not be exact.</p>
+          <p className="ivla-note">Custom AI illustration ({result.provider || 'AI'}). May not be exact.</p>
           <div className="ivla-capture-actions">
             <button
               type="button"
               className="ivla-btn-primary"
-              onClick={() => onAddImage?.(result.imageDataUrl)}
+              onClick={() => onAddImage?.(result.imageDataUrl, { source: 'AI Generated', provider: result.provider })}
             >
               Add to board
             </button>
-            <button type="button" className="ivla-btn-secondary" onClick={() => startImage(true)}>
+            <button type="button" className="ivla-btn-secondary" onClick={() => startCustomImage(true)}>
               Regenerate
             </button>
           </div>
           <div className="ivla-capture-actions">
-            <button type="button" className="ivla-btn-secondary" onClick={generateTextFromCached}>
-              Generate text
+            <button type="button" className="ivla-btn-secondary" onClick={() => startDiscover()}>
+              <Search size={14} /> Find on Commons
             </button>
             <button type="button" className="ivla-btn-secondary" onClick={onDismiss}>
               Dismiss
             </button>
           </div>
-          <button type="button" className="ivla-link" onClick={() => { setView('type'); }}>
-            Type it instead
-          </button>
         </div>
       )}
 
@@ -468,10 +602,10 @@ export default function CapturePreview({
 
       {view === 'type' && (
         <div className="ivla-result">
-          <div className="ivla-capture-title">What should I explain?</div>
+          <div className="ivla-capture-title">What visual should I find?</div>
           {gradeSelect}
           <label className="ivla-type-label" htmlFor="ivla-type-input">
-            Type the concept (max 500 characters):
+            Type the concept (e.g. human heart, water cycle):
           </label>
           <textarea
             id="ivla-type-input"
@@ -480,18 +614,37 @@ export default function CapturePreview({
             maxLength={500}
             rows={3}
             onChange={(e) => setTypeText(e.target.value)}
-            placeholder="e.g. fractions"
+            placeholder="e.g. binary search"
           />
           <div className="ivla-capture-actions">
-            <button type="button" className="ivla-btn-primary" onClick={explainTyped}>
+            <button
+              type="button"
+              className="ivla-btn-primary"
+              onClick={discoverTyped}
+              title="Search Wikimedia Commons"
+            >
+              <Search size={16} aria-hidden="true" />
+              Find visual
+            </button>
+            <button
+              type="button"
+              className="ivla-btn-secondary"
+              onClick={explainTyped}
+              title="Explain concept"
+            >
               <Type size={16} aria-hidden="true" />
               Explain
             </button>
-            <button type="button" className="ivla-btn-secondary" onClick={makeImageTyped}>
-              <ImageIcon size={16} aria-hidden="true" />
-              Make image
-            </button>
           </div>
+          <button
+            type="button"
+            className="ivla-link"
+            onClick={makeCustomImageTyped}
+            style={{ fontSize: '12px', marginTop: '4px' }}
+          >
+            <Sparkles size={12} style={{ display: 'inline', marginRight: '4px' }} />
+            Generate custom AI illustration instead
+          </button>
           {capture && (
             <button type="button" className="ivla-link" onClick={() => setView('preview')}>
               Back to preview

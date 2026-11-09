@@ -12,6 +12,7 @@ import { interpret } from '../tasks/interpret.js';
 import { explain } from '../tasks/explain.js';
 import { buildImagePrompt } from '../tasks/buildImagePrompt.js';
 import { generateImage } from '../tasks/generateImage.js';
+import { discoverVisuals } from '../tasks/discoverVisuals.js';
 import { deduped, cacheKey, sha256hex } from '../lib/cache.js';
 import { getUsage } from '../lib/usage.js';
 import { createBudget } from '../lib/budget.js';
@@ -187,6 +188,64 @@ router.post('/image-from-text', async (req, res) => {
         provider,
       };
     });
+    res.json(value);
+  } catch (err) {
+    sendAiError(res, err);
+  }
+});
+
+// Wikimedia Commons visual discovery endpoints
+router.post('/discover-from-image', async (req, res) => {
+  try {
+    const gradeLevel = validateGradeLevel(req.body?.gradeLevel);
+    const imageDataUrl = validateImageDataUrl(req.body?.imageDataUrl);
+    const hasInterp = req.body?.interpretation && typeof req.body.interpretation === 'object';
+    const limit = Number.isInteger(req.body?.limit) ? Math.min(Math.max(req.body.limit, 1), 12) : 4;
+
+    const key = cacheKey([
+      'discover-from-image',
+      gradeLevel,
+      limit,
+      sha256hex(imageDataUrl),
+      hasInterp ? sha256hex(JSON.stringify(req.body.interpretation)) : '',
+    ]);
+
+    const { value } = await runMaybeFresh(req.body?.fresh === true, key, async () => {
+      const budget = createBudget(4);
+      const interpretation = hasInterp ? validateInterpretation(req.body.interpretation) : null;
+      return discoverVisuals({
+        imageDataUrl,
+        interpretation,
+        gradeLevel,
+        budget,
+        limit,
+      });
+    });
+
+    res.json(value);
+  } catch (err) {
+    sendAiError(res, err);
+  }
+});
+
+router.post('/discover-from-text', async (req, res) => {
+  try {
+    const gradeLevel = validateGradeLevel(req.body?.gradeLevel);
+    const text = validateText(req.body?.text);
+    const limit = Number.isInteger(req.body?.limit) ? Math.min(Math.max(req.body.limit, 1), 12) : 4;
+
+    const key = cacheKey(['discover-from-text', gradeLevel, limit, sha256hex(text)]);
+
+    const { value } = await runMaybeFresh(req.body?.fresh === true, key, async () => {
+      const budget = createBudget(4);
+      return discoverVisuals({
+        text,
+        gradeLevel,
+        budget,
+        limit,
+      });
+    });
+
     res.json(value);
   } catch (err) {
     sendAiError(res, err);

@@ -26,9 +26,9 @@ export function createText(x, y, text, fontSize = 24, color = '#111111') {
   return { id: uid('text'), type: 'text', x, y, text, fontSize, color };
 }
 
-/** { id, type: 'image', x, y, w, h, src } */
-export function createImage(x, y, w, h, src) {
-  return { id: uid('img'), type: 'image', x, y, w, h, src };
+/** { id, type: 'image', x, y, w, h, src, meta } */
+export function createImage(x, y, w, h, src, meta = null) {
+  return { id: uid('img'), type: 'image', x, y, w, h, src, ...(meta ? { meta } : {}) };
 }
 
 /** Normalized bounding box { x, y, w, h } for any element. Used for select highlight. */

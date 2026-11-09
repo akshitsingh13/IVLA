@@ -64,6 +64,12 @@ export const imageFromImage = (imageDataUrl, gradeLevel, opts, extra = {}) =>
 export const imageFromText = (text, gradeLevel, opts) =>
   post('/api/image-from-text', { text, gradeLevel }, opts);
 
+export const discoverFromImage = (imageDataUrl, gradeLevel, opts, extra = {}) =>
+  post('/api/discover-from-image', { imageDataUrl, gradeLevel, ...extra }, opts);
+
+export const discoverFromText = (text, gradeLevel, opts, extra = {}) =>
+  post('/api/discover-from-text', { text, gradeLevel, ...extra }, opts);
+
 export async function getUsage({ signal } = {}) {
   try {
     const res = await fetch('/api/usage', { signal });

@@ -238,24 +238,24 @@ export default function App() {
   // Add to board (image): normal image element scaled to ~360px wide,
   // same placement rules. Select/erase/undo work like any other element.
   const handleAddImage = useCallback(
-    (dataUrl) => {
-      if (!dataUrl) {
+    (src, meta = null) => {
+      if (!src) {
         showToast('No image to add yet.');
         return;
       }
       const img = new Image();
       img.onload = () => {
-        const maxW = 360;
+        const maxW = 380;
         const scale = Math.min(1, maxW / (img.naturalWidth || maxW));
         const w = Math.max(1, Math.round((img.naturalWidth || maxW) * scale));
         const h = Math.max(1, Math.round((img.naturalHeight || maxW) * scale));
         const pos = placeBox(capture?.bounds, w, h);
-        const el = createImage(pos.x, pos.y, w, h, dataUrl);
+        const el = createImage(pos.x, pos.y, w, h, src, meta);
         commitElements([...elementsRef.current, el]);
         showToast('Added to board');
       };
       img.onerror = () => showToast('That image could not be added to the board.');
-      img.src = dataUrl;
+      img.src = src;
     },
     [capture, commitElements, placeBox, showToast]
   );
