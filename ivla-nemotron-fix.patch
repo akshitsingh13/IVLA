@@ -1,0 +1,65 @@
+diff --git a/server/config/models.js b/server/config/models.js
+index aa25787..7548486 100644
+--- a/server/config/models.js
++++ b/server/config/models.js
+@@ -1,12 +1,19 @@
+ // Single place to change models. NVIDIA OpenAI-compatible endpoints.
+ 
++// Verified with scripts/probe-models.js on 2026-11-09:
++//  - llama-3.2-11b-vision-instruct was removed (HTTP 410), so it is gone.
++//  - nemotron-3.5-super-vl is fast (~1s) and reads images via image_url. It is a
++//    REASONING model: it "thinks" before answering and those tokens count against
++//    max_tokens, so keep max_tokens generous in tasks/*.js or the reply comes back empty.
++//  - llama-3.2-90b-vision-instruct still works but takes ~30s even for one word,
++//    so it is only a slow last-resort fallback.
+ export const MODELS = {
+   vision: {
+-    primary: "meta/llama-3.2-11b-vision-instruct",
++    primary: "nvidia/nemotron-3.5-super-vl-120b-a12b",
+     fallback: "meta/llama-3.2-90b-vision-instruct",
+   },
+   text: {
+-    primary: "meta/llama-3.2-11b-vision-instruct",
++    primary: "nvidia/nemotron-3.5-super-vl-120b-a12b",
+     fallback: "meta/llama-3.2-90b-vision-instruct",
+   },
+   image: {
+diff --git a/server/tasks/buildImagePrompt.js b/server/tasks/buildImagePrompt.js
+index 9337404..9fbeb92 100644
+--- a/server/tasks/buildImagePrompt.js
++++ b/server/tasks/buildImagePrompt.js
+@@ -45,7 +45,7 @@ export async function buildImagePrompt(
+   ];
+   try {
+     const { text } = await chatWithFallback(
+-      { kind: 'text', messages, maxTokens: 200, temperature: 0.5, timeoutMs: 20000, budget },
++      { kind: 'text', messages, maxTokens: 800, temperature: 0.5, timeoutMs: 60000, budget },
+       chatFn
+     );
+     const cleaned = cleanImagePrompt(text);
+diff --git a/server/tasks/explain.js b/server/tasks/explain.js
+index 0ba83b6..46ed4f2 100644
+--- a/server/tasks/explain.js
++++ b/server/tasks/explain.js
+@@ -32,7 +32,7 @@ export async function explain({ interpretation, gradeLevel = 'auto', budget }) {
+     { role: 'user', content: explainPrompt({ gradeLevel, interpretation }) },
+   ];
+   const { text } = await chatWithFallback(
+-    { kind: 'text', messages, maxTokens: 500, temperature: 0.3, timeoutMs: 20000, budget },
++    { kind: 'text', messages, maxTokens: 1200, temperature: 0.3, timeoutMs: 60000, budget },
+   );
+   try {
+     return normalizeExplanation(parseJsonLoose(text), text);
+diff --git a/server/tasks/interpret.js b/server/tasks/interpret.js
+index ee116d1..64319b8 100644
+--- a/server/tasks/interpret.js
++++ b/server/tasks/interpret.js
+@@ -16,7 +16,7 @@ export async function interpret({ imageDataUrl, gradeLevel = 'auto', budget }) {
+     },
+   ];
+   const { text } = await chatWithFallback(
+-    { kind: 'vision', messages, maxTokens: 800, temperature: 0.1, timeoutMs: 30000, budget },
++    { kind: 'vision', messages, maxTokens: 1500, temperature: 0.1, timeoutMs: 60000, budget },
+   );
+   let parsed;
+   try {

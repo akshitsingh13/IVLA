@@ -32,7 +32,7 @@ export async function explain({ interpretation, gradeLevel = 'auto', budget }) {
     { role: 'user', content: explainPrompt({ gradeLevel, interpretation }) },
   ];
   const { text } = await chatWithFallback(
-    { kind: 'text', messages, maxTokens: 500, temperature: 0.3, timeoutMs: 20000, budget },
+    { kind: 'text', messages, maxTokens: 1200, temperature: 0.3, timeoutMs: 60000, budget },
   );
   try {
     return normalizeExplanation(parseJsonLoose(text), text);

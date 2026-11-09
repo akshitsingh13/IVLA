@@ -16,7 +16,7 @@ export async function interpret({ imageDataUrl, gradeLevel = 'auto', budget }) {
     },
   ];
   const { text } = await chatWithFallback(
-    { kind: 'vision', messages, maxTokens: 800, temperature: 0.1, timeoutMs: 30000, budget },
+    { kind: 'vision', messages, maxTokens: 1500, temperature: 0.1, timeoutMs: 60000, budget },
   );
   let parsed;
   try {

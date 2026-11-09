@@ -45,7 +45,7 @@ export async function buildImagePrompt(
   ];
   try {
     const { text } = await chatWithFallback(
-      { kind: 'text', messages, maxTokens: 200, temperature: 0.5, timeoutMs: 20000, budget },
+      { kind: 'text', messages, maxTokens: 800, temperature: 0.5, timeoutMs: 60000, budget },
       chatFn
     );
     const cleaned = cleanImagePrompt(text);

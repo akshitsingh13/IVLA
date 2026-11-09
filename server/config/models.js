@@ -1,12 +1,19 @@
 // Single place to change models. NVIDIA OpenAI-compatible endpoints.
 
+// Verified with scripts/probe-models.js on 2026-11-09:
+//  - llama-3.2-11b-vision-instruct was removed (HTTP 410), so it is gone.
+//  - nemotron-3.5-super-vl is fast (~1s) and reads images via image_url. It is a
+//    REASONING model: it "thinks" before answering and those tokens count against
+//    max_tokens, so keep max_tokens generous in tasks/*.js or the reply comes back empty.
+//  - llama-3.2-90b-vision-instruct still works but takes ~30s even for one word,
+//    so it is only a slow last-resort fallback.
 export const MODELS = {
   vision: {
-    primary: "meta/llama-3.2-11b-vision-instruct",
+    primary: "nvidia/nemotron-3.5-super-vl-120b-a12b",
     fallback: "meta/llama-3.2-90b-vision-instruct",
   },
   text: {
-    primary: "meta/llama-3.2-11b-vision-instruct",
+    primary: "nvidia/nemotron-3.5-super-vl-120b-a12b",
     fallback: "meta/llama-3.2-90b-vision-instruct",
   },
   image: {
