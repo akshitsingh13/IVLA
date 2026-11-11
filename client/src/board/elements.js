@@ -8,10 +8,10 @@ export function uid(prefix = 'el') {
 }
 
 /**
- * { id, type: 'stroke', points: [{x, y, pressure}], color, width }
+ * { id, type: 'stroke', points: [{x, y, pressure}], color, width, toolType }
  */
-export function createStroke(points, color = '#111111', width = 4) {
-  return { id: uid('stroke'), type: 'stroke', points: points.slice(), color, width };
+export function createStroke(points, color = '#111111', width = 4, toolType = 'pen') {
+  return { id: uid('stroke'), type: 'stroke', points: points.slice(), color, width, toolType };
 }
 
 /**

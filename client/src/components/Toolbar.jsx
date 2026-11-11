@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react';
 import {
   MousePointer2,
   Pen,
+  Pencil,
+  Highlighter,
   Eraser,
   Shapes,
   CircleDashed,
@@ -21,6 +23,14 @@ const COLORS = [
   { name: 'Blue', value: '#2563eb' },
   { name: 'Green', value: '#16a34a' },
   { name: 'Orange', value: '#f97316' },
+];
+
+const HIGHLIGHTER_COLORS = [
+  { name: 'Yellow', value: '#facc15' },
+  { name: 'Green', value: '#4ade80' },
+  { name: 'Cyan', value: '#38bdf8' },
+  { name: 'Pink', value: '#f472b6' },
+  { name: 'Orange', value: '#fb923c' },
 ];
 
 const SHAPES = [
@@ -109,15 +119,17 @@ export default function Toolbar({
       <div className="ivla-toolbar" role="toolbar" aria-label="Whiteboard tools">
         <ToolButton label="Select" icon={MousePointer2} active={tool === 'select'} onClick={() => pickTool('select')} />
         <ToolButton label="Pen" icon={Pen} active={tool === 'pen'} onClick={() => pickTool('pen')} />
+        <ToolButton label="Pencil" icon={Pencil} active={tool === 'pencil'} onClick={() => pickTool('pencil')} />
+        <ToolButton label="Highlight" icon={Highlighter} active={tool === 'highlighter'} onClick={() => pickTool('highlighter')} />
         <ToolButton label="Eraser" icon={Eraser} active={tool === 'eraser'} onClick={() => pickTool('eraser')} />
         <ToolButton label="Shape" icon={Shapes} active={tool === 'shape'} onClick={() => pickTool('shape')} />
         <ToolButton label="AI Circle" icon={CircleDashed} active={tool === 'ai'} onClick={() => pickTool('ai')} />
 
         <div className="ivla-other-wrap" ref={otherWrapRef}>
           {showOther && (
-            <div className="ivla-popover" role="dialog" aria-label="Pen settings">
+            <div className="ivla-popover" role="dialog" aria-label="Tool settings">
               <div className="ivla-swatches">
-                {COLORS.map((c) => (
+                {(tool === 'highlighter' ? HIGHLIGHTER_COLORS : COLORS).map((c) => (
                   <button
                     key={c.value}
                     type="button"
@@ -133,8 +145,8 @@ export default function Toolbar({
                 <span>Width</span>
                 <input
                   type="range"
-                  min={1}
-                  max={24}
+                  min={tool === 'highlighter' ? 8 : 1}
+                  max={tool === 'highlighter' ? 48 : 24}
                   step={1}
                   value={strokeWidth}
                   onChange={(e) => setStrokeWidth(Number(e.target.value))}

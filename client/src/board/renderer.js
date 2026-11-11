@@ -35,7 +35,7 @@ export function drawElement(ctx, element) {
   try {
     switch (element.type) {
       case 'stroke':
-        drawStroke(ctx, element.points, element.color, element.width);
+        drawStroke(ctx, element.points, element.color, element.width, element.toolType);
         break;
       case 'shape':
         drawShape(ctx, element);
@@ -57,19 +57,43 @@ export function drawElement(ctx, element) {
 
 export function renderAll(ctx, elements) {
   if (!ctx || !Array.isArray(elements)) return;
-  for (const el of elements) drawElement(ctx, el);
+  // Draw highlighters first so they appear behind pen, pencil, text, and shapes
+  for (const el of elements) {
+    if (el?.type === 'stroke' && el?.toolType === 'highlighter') {
+      drawElement(ctx, el);
+    }
+  }
+  // Draw all other elements on top
+  for (const el of elements) {
+    if (!(el?.type === 'stroke' && el?.toolType === 'highlighter')) {
+      drawElement(ctx, el);
+    }
+  }
 }
 
 // --- strokes ---
 // Smoothing: quadratic curves through segment midpoints. This turns the
 // polyline into a smooth path instead of jagged straight segments.
-function drawStroke(ctx, points, color = '#111111', width = 4) {
+function drawStroke(ctx, points, color = '#111111', width = 4, toolType = 'pen') {
   if (!points || points.length === 0) return;
   ctx.save();
+
+  if (toolType === 'highlighter') {
+    ctx.globalAlpha = 0.38;
+    ctx.globalCompositeOperation = 'multiply';
+    ctx.lineCap = 'square';
+    ctx.lineJoin = 'bevel';
+  } else if (toolType === 'pencil') {
+    ctx.globalAlpha = 0.82;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+  } else {
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+  }
+
   ctx.strokeStyle = color;
   ctx.fillStyle = color;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
 
   if (points.length === 1) {
     const p = points[0];
