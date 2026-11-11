@@ -18,6 +18,32 @@ export default function App() {
   const [tool, setToolState] = useState('pen');
   const [color, setColor] = useState('#111111');
   const [strokeWidth, setStrokeWidth] = useState(4);
+
+  const toolSettingsRef = useRef({
+    pen: { color: '#111111', strokeWidth: 4 },
+    pencil: { color: '#374151', strokeWidth: 2 },
+    highlighter: { color: '#facc15', strokeWidth: 22 },
+  });
+
+  const handleSetColor = useCallback(
+    (c) => {
+      setColor(c);
+      if (toolSettingsRef.current[tool]) {
+        toolSettingsRef.current[tool].color = c;
+      }
+    },
+    [tool]
+  );
+
+  const handleSetStrokeWidth = useCallback(
+    (w) => {
+      setStrokeWidth(w);
+      if (toolSettingsRef.current[tool]) {
+        toolSettingsRef.current[tool].strokeWidth = w;
+      }
+    },
+    [tool]
+  );
   const [shapeKind, setShapeKind] = useState('rect');
   const [showOther, setShowOther] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
@@ -85,6 +111,10 @@ export default function App() {
       clearLasso();
       setSelectedId(null);
       setToolState(t);
+      if (toolSettingsRef.current[t]) {
+        setColor(toolSettingsRef.current[t].color);
+        setStrokeWidth(toolSettingsRef.current[t].strokeWidth);
+      }
     },
     [clearLasso]
   );
@@ -535,9 +565,9 @@ export default function App() {
         onRedo={handleRedo}
         onClear={handleClear}
         color={color}
-        setColor={setColor}
+        setColor={handleSetColor}
         strokeWidth={strokeWidth}
-        setStrokeWidth={setStrokeWidth}
+        setStrokeWidth={handleSetStrokeWidth}
         shapeKind={shapeKind}
         setShapeKind={setShapeKind}
         showOther={showOther}

@@ -102,10 +102,11 @@ export default function WhiteboardCanvas({
       drawBackground(ctx, w, h, backgroundRef.current);
     }
 
-    // In-progress pen stroke on top.
+    // In-progress pen/pencil/highlighter stroke on top.
     if (strokeRef.current && strokeRef.current.length > 0) {
       drawElement(ctx, {
         type: 'stroke',
+        toolType: strokeRef.current.toolType || 'pen',
         points: strokeRef.current,
         color: strokeRef.current.color || '#111',
         width: strokeRef.current.width || 4,
@@ -298,8 +299,9 @@ export default function WhiteboardCanvas({
     const t = toolRef.current;
     const start = canvasPos(e.clientX, e.clientY);
 
-    if (t === 'pen') {
+    if (t === 'pen' || t === 'pencil' || t === 'highlighter') {
       strokeRef.current = [];
+      strokeRef.current.toolType = t;
       strokeRef.current.color = colorRef.current;
       strokeRef.current.width = widthRef.current;
       eachPointerPoint(e, (p, ev) => {
@@ -400,11 +402,12 @@ export default function WhiteboardCanvas({
     const cb = callbacksRef.current;
     const t = toolRef.current;
 
-    if (t === 'pen' && strokeRef.current) {
+    if ((t === 'pen' || t === 'pencil' || t === 'highlighter') && strokeRef.current) {
       const pts = strokeRef.current;
+      const toolType = pts.toolType || t;
       strokeRef.current = null;
       if (!cancelled && pts.length > 0) {
-        const el = createStroke(pts, pts.color || colorRef.current, pts.width || widthRef.current);
+        const el = createStroke(pts, pts.color || colorRef.current, pts.width || widthRef.current, toolType);
         cb.onAddElement(el);
       } else {
         drawFrame();
