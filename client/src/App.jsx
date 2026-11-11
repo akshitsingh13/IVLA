@@ -2,12 +2,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Toolbar from './components/Toolbar.jsx';
 import WhiteboardCanvas from './components/WhiteboardCanvas.jsx';
 import CapturePreview from './components/CapturePreview.jsx';
+import PageManager from './components/PageManager.jsx';
 import { createHistory } from './board/history.js';
 import { cloneElements, createText, createImage, layoutText, TEXT_MAX_WIDTH } from './board/elements.js';
 import { captureRegion, isValidLasso } from './board/lasso.js';
 import './App.css';
 
 export default function App() {
+  const [pages, setPages] = useState(() => [
+    { id: 'page-1', elements: [] },
+  ]);
+  const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const [elements, setElements] = useState([]);
   const [tool, setToolState] = useState('pen');
   const [color, setColor] = useState('#111111');
@@ -30,11 +35,23 @@ export default function App() {
     }
   });
 
-  const historyRef = useRef(null);
-  if (!historyRef.current) historyRef.current = createHistory(100);
+  const pageHistoriesRef = useRef({});
+  const getPageHistory = useCallback((pageId, initialElements = []) => {
+    if (!pageHistoriesRef.current[pageId]) {
+      const h = createHistory(100);
+      h.push(cloneElements(initialElements));
+      pageHistoriesRef.current[pageId] = h;
+    }
+    return pageHistoriesRef.current[pageId];
+  }, []);
+
   const toastTimerRef = useRef(0);
   const elementsRef = useRef(elements);
   elementsRef.current = elements;
+  const pagesRef = useRef(pages);
+  pagesRef.current = pages;
+  const currentPageIndexRef = useRef(currentPageIndex);
+  currentPageIndexRef.current = currentPageIndex;
 
   const showToast = useCallback((msg) => {
     setToast(msg);
@@ -49,8 +66,10 @@ export default function App() {
     setUndoDepth((d) => d + 1);
   }, []);
 
-  const canUndo = historyRef.current.canUndo();
-  const canRedo = historyRef.current.canRedo();
+  const currentPage = pages[currentPageIndex];
+  const curHistory = currentPage ? getPageHistory(currentPage.id, currentPage.elements) : null;
+  const canUndo = curHistory ? curHistory.canUndo() : false;
+  const canRedo = curHistory ? curHistory.canRedo() : false;
   void undoDepth;
 
   const clearLasso = useCallback(() => {
@@ -75,10 +94,16 @@ export default function App() {
       const cloned = cloneElements(next);
       setElements(cloned);
       elementsRef.current = cloned;
-      historyRef.current.push(cloned);
+      const curPage = pagesRef.current[currentPageIndexRef.current];
+      if (curPage) {
+        getPageHistory(curPage.id).push(cloned);
+        setPages((prev) =>
+          prev.map((p, idx) => (idx === currentPageIndexRef.current ? { ...p, elements: cloned } : p))
+        );
+      }
       refreshUndo();
     },
-    [refreshUndo]
+    [getPageHistory, refreshUndo]
   );
 
   const handleAddElement = useCallback(
@@ -93,33 +118,167 @@ export default function App() {
     const cloned = cloneElements(next);
     setElements(cloned);
     elementsRef.current = cloned;
+    setPages((prev) =>
+      prev.map((p, idx) => (idx === currentPageIndexRef.current ? { ...p, elements: cloned } : p))
+    );
   }, []);
 
   const handleLiveCommit = useCallback(() => {
     // Push the current live state as ONE undo step.
-    historyRef.current.push(cloneElements(elementsRef.current));
+    const curPage = pagesRef.current[currentPageIndexRef.current];
+    if (curPage) {
+      getPageHistory(curPage.id).push(cloneElements(elementsRef.current));
+    }
     refreshUndo();
-  }, [refreshUndo]);
+  }, [getPageHistory, refreshUndo]);
 
   const handleUndo = useCallback(() => {
-    const prev = historyRef.current.undo();
+    const curPage = pagesRef.current[currentPageIndexRef.current];
+    if (!curPage) return;
+    const h = getPageHistory(curPage.id);
+    const prev = h.undo();
     if (prev !== null) {
-      setElements(prev);
-      elementsRef.current = prev;
+      const cloned = cloneElements(prev);
+      setElements(cloned);
+      elementsRef.current = cloned;
+      setPages((prevPages) =>
+        prevPages.map((p, idx) => (idx === currentPageIndexRef.current ? { ...p, elements: cloned } : p))
+      );
       setSelectedId(null);
       refreshUndo();
     }
-  }, [refreshUndo]);
+  }, [getPageHistory, refreshUndo]);
 
   const handleRedo = useCallback(() => {
-    const next = historyRef.current.redo();
+    const curPage = pagesRef.current[currentPageIndexRef.current];
+    if (!curPage) return;
+    const h = getPageHistory(curPage.id);
+    const next = h.redo();
     if (next !== null) {
-      setElements(next);
-      elementsRef.current = next;
+      const cloned = cloneElements(next);
+      setElements(cloned);
+      elementsRef.current = cloned;
+      setPages((prevPages) =>
+        prevPages.map((p, idx) => (idx === currentPageIndexRef.current ? { ...p, elements: cloned } : p))
+      );
       setSelectedId(null);
       refreshUndo();
     }
-  }, [refreshUndo]);
+  }, [getPageHistory, refreshUndo]);
+
+  // ---------- Page Navigation & Management ----------
+  const handleSelectPage = useCallback(
+    (newIndex) => {
+      if (
+        newIndex < 0 ||
+        newIndex >= pagesRef.current.length ||
+        newIndex === currentPageIndexRef.current
+      )
+        return;
+      clearLasso();
+      setSelectedId(null);
+      setCurrentPageIndex(newIndex);
+      currentPageIndexRef.current = newIndex;
+      const targetPage = pagesRef.current[newIndex];
+      const cloned = cloneElements(targetPage.elements || []);
+      setElements(cloned);
+      elementsRef.current = cloned;
+      getPageHistory(targetPage.id, cloned);
+      refreshUndo();
+    },
+    [clearLasso, getPageHistory, refreshUndo]
+  );
+
+  const handleAddPage = useCallback(() => {
+    clearLasso();
+    setSelectedId(null);
+    const newPage = {
+      id: 'page-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      elements: [],
+    };
+    const newPages = [...pagesRef.current, newPage];
+    const newIndex = newPages.length - 1;
+    getPageHistory(newPage.id, []);
+    setPages(newPages);
+    setCurrentPageIndex(newIndex);
+    currentPageIndexRef.current = newIndex;
+    setElements([]);
+    elementsRef.current = [];
+    refreshUndo();
+    showToast(`Page ${newIndex + 1} added`);
+  }, [clearLasso, getPageHistory, refreshUndo, showToast]);
+
+  const handleDuplicatePage = useCallback(
+    (index) => {
+      const source = pagesRef.current[index];
+      if (!source) return;
+      clearLasso();
+      setSelectedId(null);
+      const duplicatedElements = cloneElements(source.elements || []).map((el) => ({
+        ...el,
+        id: 'el-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+      }));
+      const newPage = {
+        id: 'page-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        elements: duplicatedElements,
+      };
+      const newPages = [...pagesRef.current];
+      const insertIndex = index + 1;
+      newPages.splice(insertIndex, 0, newPage);
+      getPageHistory(newPage.id, duplicatedElements);
+      setPages(newPages);
+      setCurrentPageIndex(insertIndex);
+      currentPageIndexRef.current = insertIndex;
+      setElements(duplicatedElements);
+      elementsRef.current = duplicatedElements;
+      refreshUndo();
+      showToast(`Page ${insertIndex + 1} duplicated`);
+    },
+    [clearLasso, getPageHistory, refreshUndo, showToast]
+  );
+
+  const handleDeletePage = useCallback(
+    (index) => {
+      if (pagesRef.current.length <= 1) {
+        showToast('Cannot delete the only page');
+        return;
+      }
+      const deletedPage = pagesRef.current[index];
+      if (deletedPage) {
+        delete pageHistoriesRef.current[deletedPage.id];
+      }
+      const newPages = pagesRef.current.filter((_, idx) => idx !== index);
+      const nextIndex = Math.min(index, newPages.length - 1);
+      setPages(newPages);
+      setCurrentPageIndex(nextIndex);
+      currentPageIndexRef.current = nextIndex;
+      const nextElements = cloneElements(newPages[nextIndex].elements || []);
+      setElements(nextElements);
+      elementsRef.current = nextElements;
+      clearLasso();
+      setSelectedId(null);
+      refreshUndo();
+      showToast(`Page ${index + 1} deleted`);
+    },
+    [clearLasso, refreshUndo, showToast]
+  );
+
+  const handleMovePage = useCallback((fromIndex, toIndex) => {
+    if (
+      toIndex < 0 ||
+      toIndex >= pagesRef.current.length ||
+      fromIndex === toIndex
+    )
+      return;
+    const currentId = pagesRef.current[currentPageIndexRef.current]?.id;
+    const nextPages = [...pagesRef.current];
+    const [removed] = nextPages.splice(fromIndex, 1);
+    nextPages.splice(toIndex, 0, removed);
+    setPages(nextPages);
+    const newCurIndex = nextPages.findIndex((p) => p.id === currentId);
+    setCurrentPageIndex(newCurIndex);
+    currentPageIndexRef.current = newCurIndex;
+  }, []);
 
   const handleClear = useCallback(() => {
     if (elementsRef.current.length === 0) {
@@ -287,6 +446,16 @@ export default function App() {
       <div className="ivla-wordmark" aria-label="IVLA">
         IVLA
       </div>
+
+      <PageManager
+        pages={pages}
+        currentPageIndex={currentPageIndex}
+        onSelectPage={handleSelectPage}
+        onAddPage={handleAddPage}
+        onDuplicatePage={handleDuplicatePage}
+        onDeletePage={handleDeletePage}
+        onMovePage={handleMovePage}
+      />
 
       <WhiteboardCanvas
         elements={elements}
