@@ -10,10 +10,11 @@ import './App.css';
 
 export default function App() {
   const [pages, setPages] = useState(() => [
-    { id: 'page-1', elements: [] },
+    { id: 'page-1', elements: [], background: 'white' },
   ]);
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const [elements, setElements] = useState([]);
+  const activeBackground = pages[currentPageIndex]?.background || 'white';
   const [tool, setToolState] = useState('pen');
   const [color, setColor] = useState('#111111');
   const [strokeWidth, setStrokeWidth] = useState(4);
@@ -189,12 +190,21 @@ export default function App() {
     [clearLasso, getPageHistory, refreshUndo]
   );
 
+  const handleSetBackground = useCallback((bgId) => {
+    setPages((prevPages) =>
+      prevPages.map((p, idx) =>
+        idx === currentPageIndexRef.current ? { ...p, background: bgId } : p
+      )
+    );
+  }, []);
+
   const handleAddPage = useCallback(() => {
     clearLasso();
     setSelectedId(null);
     const newPage = {
       id: 'page-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
       elements: [],
+      background: 'white',
     };
     const newPages = [...pagesRef.current, newPage];
     const newIndex = newPages.length - 1;
@@ -221,6 +231,7 @@ export default function App() {
       const newPage = {
         id: 'page-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
         elements: duplicatedElements,
+        background: source.background || 'white',
       };
       const newPages = [...pagesRef.current];
       const insertIndex = index + 1;
@@ -344,7 +355,7 @@ export default function App() {
       const dpr = window.devicePixelRatio || 1;
       let result;
       try {
-        result = captureRegion(elementsRef.current, closed, canvasSize, dpr);
+        result = captureRegion(elementsRef.current, closed, canvasSize, dpr, activeBackground);
       } catch {
         showToast('Could not capture that area');
         return;
@@ -358,7 +369,7 @@ export default function App() {
       // Stored in App state so Phase 2 can send dataUrl to the backend.
       setCapture({ dataUrl: result.dataUrl, bounds: result.bounds, path: closed });
     },
-    [showToast]
+    [showToast, activeBackground]
   );
 
   const placeholderAI = useCallback(() => {
@@ -459,6 +470,7 @@ export default function App() {
 
       <WhiteboardCanvas
         elements={elements}
+        background={activeBackground}
         tool={tool}
         color={color}
         width={strokeWidth}
@@ -530,6 +542,8 @@ export default function App() {
         setShapeKind={setShapeKind}
         showOther={showOther}
         setShowOther={setShowOther}
+        background={activeBackground}
+        setBackground={handleSetBackground}
       />
 
       {toast && (

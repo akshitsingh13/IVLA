@@ -11,8 +11,9 @@ import {
   X,
 } from 'lucide-react';
 import { renderAll } from '../board/renderer.js';
+import { drawBackground } from '../board/backgrounds.js';
 
-function PageThumbCanvas({ elements }) {
+function PageThumbCanvas({ elements, background = 'white' }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -22,8 +23,7 @@ function PageThumbCanvas({ elements }) {
     if (!ctx) return;
 
     ctx.save();
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    drawBackground(ctx, canvas.width, canvas.height, background);
 
     const vw = Math.max(window.innerWidth || 1200, 800);
     const vh = Math.max(window.innerHeight || 800, 600);
@@ -32,7 +32,7 @@ function PageThumbCanvas({ elements }) {
     ctx.scale(scale, scale);
     renderAll(ctx, elements || []);
     ctx.restore();
-  }, [elements]);
+  }, [elements, background]);
 
   return (
     <canvas
@@ -177,7 +177,7 @@ export default function PageManager({
                     }}
                     aria-label={`Switch to page ${index + 1}`}
                   >
-                    <PageThumbCanvas elements={page.elements} />
+                    <PageThumbCanvas elements={page.elements} background={page.background} />
                     <span className="ivla-page-number-tag">
                       {index + 1}
                     </span>
