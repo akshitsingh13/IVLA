@@ -10,6 +10,11 @@ import { createHistory } from './board/history.js';
 import { cloneElements, createText, createImage, layoutText, TEXT_MAX_WIDTH } from './board/elements.js';
 import { captureRegion, isValidLasso } from './board/lasso.js';
 import {
+  isDarkBackground,
+  adaptElementColor,
+  isDefaultThemeColor,
+} from './board/backgrounds.js';
+import {
   getAllWhiteboards,
   getWhiteboard,
   saveWhiteboard,
@@ -145,6 +150,9 @@ export default function App() {
       h.push(cloneElements(p.elements || []));
       pageHistoriesRef.current[p.id] = h;
     }
+
+    const isTargetDark = isDarkBackground(loadedPages[0]?.background || 'white');
+    adaptToolSettings(isTargetDark);
     setSaveStatus('saved');
   };
 
@@ -162,6 +170,20 @@ export default function App() {
     setLassoPath(null);
     setCapture(null);
     setTypeOpen(false);
+  }, []);
+
+  // ---------- Automatic Theme/Contrast Adaptation ----------
+  const adaptToolSettings = useCallback((isTargetDark) => {
+    if (toolSettingsRef.current.pen && isDefaultThemeColor(toolSettingsRef.current.pen.color)) {
+      toolSettingsRef.current.pen.color = isTargetDark ? '#FFFFFF' : '#111111';
+    }
+    if (toolSettingsRef.current.pencil && isDefaultThemeColor(toolSettingsRef.current.pencil.color)) {
+      toolSettingsRef.current.pencil.color = isTargetDark ? '#FFFFFF' : '#374151';
+    }
+    setColor((prev) => {
+      if (!isDefaultThemeColor(prev)) return prev;
+      return isTargetDark ? '#FFFFFF' : '#111111';
+    });
   }, []);
 
   // ---------- Tool selection with per-tool settings ----------
@@ -323,14 +345,34 @@ export default function App() {
   // ---------- Per-page background handling ----------
   const handleSetBackground = useCallback(
     (bgId) => {
+      const isTargetDark = isDarkBackground(bgId);
+      const curPage = pagesRef.current[currentPageIndexRef.current];
+      const curBg = curPage?.background || 'white';
+      const wasDark = isDarkBackground(curBg);
+
+      let updatedElements = elementsRef.current;
+      if (isTargetDark !== wasDark) {
+        updatedElements = elementsRef.current.map((el) => adaptElementColor(el, isTargetDark));
+        setElements(updatedElements);
+        elementsRef.current = updatedElements;
+        if (curPage) {
+          getPageHistory(curPage.id).push(cloneElements(updatedElements));
+          refreshUndo();
+        }
+      }
+
       const updatedPages = pagesRef.current.map((p, idx) =>
-        idx === currentPageIndexRef.current ? { ...p, background: bgId } : p
+        idx === currentPageIndexRef.current
+          ? { ...p, background: bgId, elements: updatedElements }
+          : p
       );
       setPages(updatedPages);
       pagesRef.current = updatedPages;
+
+      adaptToolSettings(isTargetDark);
       scheduleAutosave(updatedPages);
     },
-    [scheduleAutosave]
+    [adaptToolSettings, getPageHistory, refreshUndo, scheduleAutosave]
   );
 
   // ---------- Page Management ----------
@@ -352,8 +394,12 @@ export default function App() {
       elementsRef.current = cloned;
       getPageHistory(targetPage.id, cloned);
       refreshUndo();
+
+      // Synchronize tool settings with target page background
+      const isTargetDark = isDarkBackground(targetPage?.background || 'white');
+      adaptToolSettings(isTargetDark);
     },
-    [clearLasso, getPageHistory, refreshUndo]
+    [adaptToolSettings, clearLasso, getPageHistory, refreshUndo]
   );
 
   const handleAddPage = useCallback(() => {
@@ -374,9 +420,10 @@ export default function App() {
     setElements([]);
     elementsRef.current = [];
     refreshUndo();
+    adaptToolSettings(false); // 'white' is light
     scheduleAutosave(newPages);
     showToast(`Page ${newIndex + 1} added`);
-  }, [clearLasso, getPageHistory, refreshUndo, scheduleAutosave, showToast]);
+  }, [adaptToolSettings, clearLasso, getPageHistory, refreshUndo, scheduleAutosave, showToast]);
 
   const handleDuplicatePage = useCallback(
     (index) => {
@@ -404,10 +451,11 @@ export default function App() {
       setElements(duplicatedElements);
       elementsRef.current = duplicatedElements;
       refreshUndo();
+      adaptToolSettings(isDarkBackground(newPage.background));
       scheduleAutosave(newPages);
       showToast(`Page ${insertIndex + 1} duplicated`);
     },
-    [clearLasso, getPageHistory, refreshUndo, scheduleAutosave, showToast]
+    [adaptToolSettings, clearLasso, getPageHistory, refreshUndo, scheduleAutosave, showToast]
   );
 
   const handleDeletePage = useCallback(
@@ -686,7 +734,9 @@ export default function App() {
       const fontSize = 26;
       const layout = layoutText(content, fontSize, TEXT_MAX_WIDTH);
       const pos = placeBox(capture?.bounds, layout.width + 12, layout.height + 12);
-      const el = createText(pos.x + 6, pos.y + fontSize + 6, content, fontSize, '#111827');
+      const curBg = pagesRef.current[currentPageIndexRef.current]?.background || 'white';
+      const textColor = isDarkBackground(curBg) ? '#f8fafc' : '#111827';
+      const el = createText(pos.x + 6, pos.y + fontSize + 6, content, fontSize, textColor);
       commitElements([...elementsRef.current, el]);
       showToast('Added to board');
     },

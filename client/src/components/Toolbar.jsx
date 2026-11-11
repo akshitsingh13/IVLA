@@ -153,7 +153,13 @@ export default function Toolbar({
               <div className="ivla-swatches">
                 {(tool === 'highlighter' ? HIGHLIGHTER_COLORS : COLORS).map((c) => {
                   const isWhite = c.value.toUpperCase() === '#FFFFFF';
-                  const isActive = (color || '').toLowerCase() === c.value.toLowerCase();
+                  const isBlack = c.value === '#111111';
+                  const curColor = (color || '').toLowerCase();
+                  const targetColor = c.value.toLowerCase();
+                  const isActive =
+                    curColor === targetColor ||
+                    (isBlack && (curColor === '#000000' || curColor === '#111827' || curColor === '#374151')) ||
+                    (isWhite && (curColor === '#ffffff' || curColor === '#f8fafc' || curColor === '#e2e8f0'));
                   return (
                     <button
                       key={c.value}
