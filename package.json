@@ -2,12 +2,12 @@
   "name": "ivla",
   "private": true,
   "version": "1.0.0",
-  "description": "IVLA - Interactive Visual Learning Assistant (Phase 1: Whiteboard Foundation)",
+  "description": "IVLA - Interactive Visual Learning Assistant",
   "scripts": {
     "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
     "install:all": "npm install && npm install --prefix client && npm install --prefix server",
     "build": "npm run build --prefix client",
-    "start": "npm run start --prefix server"
+    "start": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\""
   },
   "devDependencies": {
     "concurrently": "^9.1.0"
