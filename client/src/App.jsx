@@ -9,6 +9,7 @@ import './App.css';
 
 export default function App() {
   const [elements, setElements] = useState([]);
+  const [background, setBackground] = useState('white');
   const [tool, setToolState] = useState('pen');
   const [color, setColor] = useState('#111111');
   const [strokeWidth, setStrokeWidth] = useState(4);
@@ -185,7 +186,7 @@ export default function App() {
       const dpr = window.devicePixelRatio || 1;
       let result;
       try {
-        result = captureRegion(elementsRef.current, closed, canvasSize, dpr);
+        result = captureRegion(elementsRef.current, closed, canvasSize, dpr, background);
       } catch {
         showToast('Could not capture that area');
         return;
@@ -199,7 +200,7 @@ export default function App() {
       // Stored in App state so Phase 2 can send dataUrl to the backend.
       setCapture({ dataUrl: result.dataUrl, bounds: result.bounds, path: closed });
     },
-    [showToast]
+    [showToast, background]
   );
 
   const placeholderAI = useCallback(() => {
@@ -290,6 +291,7 @@ export default function App() {
 
       <WhiteboardCanvas
         elements={elements}
+        background={background}
         tool={tool}
         color={color}
         width={strokeWidth}
@@ -361,6 +363,8 @@ export default function App() {
         setShapeKind={setShapeKind}
         showOther={showOther}
         setShowOther={setShowOther}
+        background={background}
+        setBackground={setBackground}
       />
 
       {toast && (

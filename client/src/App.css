@@ -770,3 +770,95 @@ body {
   padding: 6px;
   min-height: auto;
 }
+
+/* ---------- Background Selector ---------- */
+.ivla-bg-popover {
+  width: 220px;
+  bottom: calc(100% + 14px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px;
+}
+
+.ivla-bg-popover-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  margin-bottom: 8px;
+}
+
+.ivla-bg-options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+
+.ivla-bg-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  color: #334155;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.ivla-bg-option:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.ivla-bg-option.is-active {
+  border-color: var(--ivla-accent);
+  background: #eef2ff;
+  color: var(--ivla-accent);
+  font-weight: 600;
+}
+
+.ivla-bg-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1px solid #cbd5e1;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.ivla-bg-swatch-dark {
+  background: #1e293b !important;
+  border-color: #0f172a;
+}
+
+.ivla-bg-swatch-grid {
+  background:
+    linear-gradient(to right, #cbd5e1 1px, transparent 1px) 0 0 / 6px 6px,
+    linear-gradient(to bottom, #cbd5e1 1px, transparent 1px) 0 0 / 6px 6px,
+    #ffffff !important;
+}
+
+.ivla-bg-swatch-ruled {
+  background:
+    linear-gradient(to bottom, #cbd5e1 1px, transparent 1px) 0 0 / 100% 6px,
+    #ffffff !important;
+}
+
+.ivla-bg-swatch-dotted {
+  background:
+    radial-gradient(#94a3b8 1px, transparent 1px) 0 0 / 6px 6px,
+    #ffffff !important;
+}
+
+.ivla-bg-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

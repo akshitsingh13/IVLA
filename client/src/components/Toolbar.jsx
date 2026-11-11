@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   MousePointer2,
   Pen,
@@ -6,6 +6,7 @@ import {
   Shapes,
   CircleDashed,
   SlidersHorizontal,
+  Palette,
   Undo2,
   Redo2,
   Trash2,
@@ -14,6 +15,7 @@ import {
   Minus,
   ArrowUpRight,
 } from 'lucide-react';
+import { BACKGROUNDS } from '../board/backgrounds.js';
 
 const COLORS = [
   { name: 'Black', value: '#111111' },
@@ -66,8 +68,12 @@ export default function Toolbar({
   setShapeKind,
   showOther,
   setShowOther,
+  background = 'white',
+  setBackground,
 }) {
   const otherWrapRef = useRef(null);
+  const bgWrapRef = useRef(null);
+  const [showBg, setShowBg] = useState(false);
 
   // Close the "Other" popover when tapping elsewhere.
   useEffect(() => {
@@ -81,8 +87,21 @@ export default function Toolbar({
     return () => document.removeEventListener('pointerdown', onDown);
   }, [showOther, setShowOther]);
 
+  // Close the "Background" popover when tapping elsewhere.
+  useEffect(() => {
+    if (!showBg) return;
+    const onDown = (e) => {
+      if (bgWrapRef.current && !bgWrapRef.current.contains(e.target)) {
+        setShowBg(false);
+      }
+    };
+    document.addEventListener('pointerdown', onDown);
+    return () => document.removeEventListener('pointerdown', onDown);
+  }, [showBg]);
+
   const pickTool = (t) => {
     setShowOther(false);
+    setShowBg(false);
     setTool(t);
   };
 
@@ -148,7 +167,48 @@ export default function Toolbar({
             label="Other"
             icon={SlidersHorizontal}
             active={showOther}
-            onClick={() => setShowOther(!showOther)}
+            onClick={() => {
+              setShowBg(false);
+              setShowOther(!showOther);
+            }}
+          />
+        </div>
+
+        <div className="ivla-other-wrap" ref={bgWrapRef}>
+          {showBg && (
+            <div className="ivla-popover ivla-bg-popover" role="dialog" aria-label="Whiteboard background options">
+              <div className="ivla-bg-popover-title">Canvas Background</div>
+              <div className="ivla-bg-options">
+                {BACKGROUNDS.map((bg) => (
+                  <button
+                    key={bg.id}
+                    type="button"
+                    className={`ivla-bg-option${background === bg.id ? ' is-active' : ''}`}
+                    onClick={() => {
+                      if (setBackground) setBackground(bg.id);
+                      setShowBg(false);
+                    }}
+                    aria-label={`Set background to ${bg.label}`}
+                    aria-pressed={background === bg.id}
+                  >
+                    <span
+                      className={`ivla-bg-swatch ivla-bg-swatch-${bg.id}`}
+                      style={{ background: bg.color }}
+                    />
+                    <span className="ivla-bg-label">{bg.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          <ToolButton
+            label="Backdrop"
+            icon={Palette}
+            active={showBg}
+            onClick={() => {
+              setShowOther(false);
+              setShowBg(!showBg);
+            }}
           />
         </div>
 

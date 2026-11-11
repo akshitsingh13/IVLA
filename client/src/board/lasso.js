@@ -2,6 +2,8 @@
 // captureRegion, which renders board elements clipped to the lasso path.
 
 import { renderAll } from './renderer.js';
+import { drawBackground } from './backgrounds.js';
+import { getElementBounds } from './elements.js';
 
 export const LASSO_MIN_POINTS = 10;
 export const LASSO_MIN_SIZE = 40; // CSS px per side
@@ -78,7 +80,7 @@ function tracePath(ctx, path, dx = 0, dy = 0) {
  * - Detects empty captures (every pixel white).
  * Returns { dataUrl, bounds, isEmpty }.
  */
-export function captureRegion(elements, path, canvasSize, dpr = 1) {
+export function captureRegion(elements, path, canvasSize, dpr = 1, background = 'white') {
   const bounds = getBounds(path, LASSO_PADDING, canvasSize);
   if (!bounds || bounds.w <= 0 || bounds.h <= 0) {
     return { dataUrl: null, bounds, isEmpty: true };
@@ -86,6 +88,22 @@ export function captureRegion(elements, path, canvasSize, dpr = 1) {
   if (typeof document === 'undefined') {
     return { dataUrl: null, bounds, isEmpty: true };
   }
+
+  // Quick check: if no elements are inside the lasso bounds, mark empty immediately.
+  const hasIntersectingElements = (elements || []).some((el) => {
+    const eb = getElementBounds(el);
+    if (!eb) return false;
+    return (
+      eb.x <= bounds.x + bounds.w &&
+      eb.x + eb.w >= bounds.x &&
+      eb.y <= bounds.y + bounds.h &&
+      eb.y + eb.h >= bounds.y
+    );
+  });
+  if (!hasIntersectingElements) {
+    return { dataUrl: null, bounds: { ...bounds }, isEmpty: true };
+  }
+
   const scale = Math.max(1, dpr || 1);
 
   // Offscreen canvas sized to the cropped bounds (device pixels).
@@ -99,7 +117,7 @@ export function captureRegion(elements, path, canvasSize, dpr = 1) {
   ctx.scale(scale, scale);
   ctx.translate(-bounds.x, -bounds.y);
 
-  // White background first.
+  // Outer fill
   ctx.save();
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(bounds.x, bounds.y, bounds.w, bounds.h);
@@ -109,9 +127,12 @@ export function captureRegion(elements, path, canvasSize, dpr = 1) {
   tracePath(ctx, path);
   ctx.clip();
 
-  // Re-fill inside the clip (no-op visually) then render board elements.
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(bounds.x, bounds.y, bounds.w, bounds.h);
+  // Draw background inside the clip
+  const canvasW = canvasSize ? canvasSize.w : bounds.x + bounds.w;
+  const canvasH = canvasSize ? canvasSize.h : bounds.y + bounds.h;
+  drawBackground(ctx, canvasW, canvasH, background);
+
+  // Render board elements
   renderAll(ctx, elements || []);
   ctx.restore();
 
@@ -130,23 +151,6 @@ export function captureRegion(elements, path, canvasSize, dpr = 1) {
     out = small;
   }
 
-  // Empty check: nothing drawn inside => every pixel is (near-)white.
-  const octx = out.getContext('2d', { willReadFrequently: true });
-  let isEmpty = true;
-  try {
-    const data = octx.getImageData(0, 0, out.width, out.height).data;
-    for (let i = 0; i < data.length; i += 4) {
-      if (data[i] < 250 || data[i + 1] < 250 || data[i + 2] < 250) {
-        isEmpty = false;
-        break;
-      }
-    }
-  } catch {
-    // If pixels can't be read (e.g. tainted canvas), assume non-empty so we
-    // don't wrongly block the preview.
-    isEmpty = false;
-  }
-
   const dataUrl = out.toDataURL('image/png');
-  return { dataUrl, bounds: { ...bounds }, isEmpty };
+  return { dataUrl, bounds: { ...bounds }, isEmpty: false };
 }
