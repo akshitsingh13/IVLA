@@ -770,3 +770,354 @@ body {
   padding: 6px;
   min-height: auto;
 }
+
+/* ---------- Dashboard Styles ---------- */
+.ivla-dashboard {
+  position: fixed;
+  inset: 0;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  z-index: 50;
+}
+
+.ivla-dashboard-header {
+  height: 64px;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+  flex-shrink: 0;
+}
+
+.ivla-dashboard-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ivla-wordmark-static {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.28em;
+  color: var(--ivla-navy);
+}
+
+.ivla-dashboard-subtitle {
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+  border-left: 1px solid #cbd5e1;
+  padding-left: 12px;
+}
+
+.ivla-dashboard-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.ivla-dashboard-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.ivla-search-icon {
+  position: absolute;
+  left: 10px;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.ivla-dashboard-search input {
+  padding: 8px 12px 8px 34px;
+  font-size: 13px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  outline: none;
+  background: #f8fafc;
+  width: 220px;
+  transition: all 0.15s;
+}
+
+.ivla-dashboard-search input:focus {
+  background: #ffffff;
+  border-color: var(--ivla-accent);
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
+  width: 260px;
+}
+
+.ivla-create-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 8px;
+}
+
+.ivla-dashboard-content {
+  flex: 1;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 32px 28px;
+}
+
+.ivla-dashboard-title-row {
+  margin-bottom: 24px;
+}
+
+.ivla-dashboard-title-row h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.ivla-dashboard-empty {
+  background: #ffffff;
+  border: 2px dashed #cbd5e1;
+  border-radius: 16px;
+  padding: 60px 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.ivla-dashboard-empty-icon {
+  color: #94a3b8;
+  margin-bottom: 12px;
+}
+
+.ivla-dashboard-empty h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 6px;
+}
+
+.ivla-dashboard-empty p {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0 0 20px;
+  max-width: 380px;
+}
+
+.ivla-board-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+.ivla-board-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+  display: flex;
+  flex-direction: column;
+}
+
+.ivla-board-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  border-color: #cbd5e1;
+}
+
+.ivla-board-preview {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  background: #f1f5f9;
+  border-bottom: 1px solid #f1f5f9;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ivla-board-thumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ivla-board-preview-empty {
+  color: #cbd5e1;
+}
+
+.ivla-board-card-body {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ivla-board-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ivla-board-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ivla-board-action-btn {
+  background: transparent;
+  border: 0;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.ivla-board-action-btn:hover {
+  color: var(--ivla-accent);
+  background: #f1f5f9;
+}
+
+.ivla-board-rename-form {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ivla-board-rename-form input {
+  font-size: 13px;
+  padding: 4px 6px;
+  border: 1px solid var(--ivla-accent);
+  border-radius: 4px;
+  outline: none;
+  width: 100%;
+}
+
+.ivla-rename-save,
+.ivla-rename-cancel {
+  background: transparent;
+  border: 0;
+  padding: 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.ivla-rename-save {
+  color: #16a34a;
+}
+
+.ivla-rename-cancel {
+  color: #dc2626;
+}
+
+.ivla-board-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #64748b;
+  border-top: 1px solid #f8fafc;
+  padding-top: 6px;
+}
+
+.ivla-board-date {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ivla-board-delete-btn {
+  background: transparent;
+  border: 0;
+  color: #94a3b8;
+  padding: 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.ivla-board-delete-btn:hover {
+  color: #ef4444;
+  background: #fee2e2;
+}
+
+/* Whiteboard Top Navigation with Back to Dashboard */
+.ivla-board-top-nav {
+  position: absolute;
+  top: 12px;
+  left: 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  z-index: 25;
+}
+
+.ivla-back-to-dashboard-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.ivla-back-to-dashboard-btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.ivla-board-title-badge {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #f1f5f9;
+  cursor: pointer;
+}
+
+.ivla-save-status {
+  font-size: 11px;
+  font-weight: 500;
+  color: #10b981;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ivla-save-status.is-saving {
+  color: #f59e0b;
+}

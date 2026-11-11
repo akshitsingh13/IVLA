@@ -1,13 +1,29 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowLeft, Check, Cloud, Edit2 } from 'lucide-react';
 import Toolbar from './components/Toolbar.jsx';
 import WhiteboardCanvas from './components/WhiteboardCanvas.jsx';
 import CapturePreview from './components/CapturePreview.jsx';
+import Dashboard from './components/Dashboard.jsx';
 import { createHistory } from './board/history.js';
 import { cloneElements, createText, createImage, layoutText, TEXT_MAX_WIDTH } from './board/elements.js';
 import { captureRegion, isValidLasso } from './board/lasso.js';
+import {
+  getAllWhiteboards,
+  getWhiteboard,
+  saveWhiteboard,
+  deleteWhiteboard,
+  generateThumbnailDataUrl,
+} from './storage/db.js';
 import './App.css';
 
 export default function App() {
+  const [view, setView] = useState('loading'); // 'dashboard' | 'board' | 'loading'
+  const [whiteboards, setWhiteboards] = useState([]);
+  const [currentBoardId, setCurrentBoardId] = useState(null);
+  const [currentBoardTitle, setCurrentBoardTitle] = useState('Untitled Whiteboard');
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [saveStatus, setSaveStatus] = useState('saved'); // 'saved' | 'saving' | 'idle'
+
   const [elements, setElements] = useState([]);
   const [tool, setToolState] = useState('pen');
   const [color, setColor] = useState('#111111');
@@ -33,8 +49,11 @@ export default function App() {
   const historyRef = useRef(null);
   if (!historyRef.current) historyRef.current = createHistory(100);
   const toastTimerRef = useRef(0);
+  const saveTimerRef = useRef(0);
   const elementsRef = useRef(elements);
   elementsRef.current = elements;
+  const currentBoardRef = useRef({ id: currentBoardId, title: currentBoardTitle });
+  currentBoardRef.current = { id: currentBoardId, title: currentBoardTitle };
 
   const showToast = useCallback((msg) => {
     setToast(msg);
@@ -42,7 +61,39 @@ export default function App() {
     toastTimerRef.current = window.setTimeout(() => setToast(null), 2400);
   }, []);
 
-  useEffect(() => () => window.clearTimeout(toastTimerRef.current), []);
+  useEffect(() => () => {
+    window.clearTimeout(toastTimerRef.current);
+    window.clearTimeout(saveTimerRef.current);
+  }, []);
+
+  // ---------- Load whiteboards on mount ----------
+  useEffect(() => {
+    let isMounted = true;
+    getAllWhiteboards().then((boards) => {
+      if (!isMounted) return;
+      setWhiteboards(boards);
+      try {
+        const lastId = window.localStorage.getItem('ivla_last_board_id');
+        if (lastId && boards.some((b) => b.id === lastId)) {
+          const b = boards.find((x) => x.id === lastId);
+          setCurrentBoardId(b.id);
+          setCurrentBoardTitle(b.title || 'Untitled Whiteboard');
+          const loadedElements = b.elements || [];
+          setElements(cloneElements(loadedElements));
+          historyRef.current = createHistory(100);
+          historyRef.current.push(cloneElements(loadedElements));
+          setView('board');
+          return;
+        }
+      } catch {
+        /* ignore */
+      }
+      setView('dashboard');
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const refreshUndo = useCallback(() => {
     // Force re-render so Undo/Redo disabled states update.
@@ -69,6 +120,29 @@ export default function App() {
     [clearLasso]
   );
 
+  // ---------- Debounced Autosave ----------
+  const scheduleAutosave = useCallback((nextElements) => {
+    const cur = currentBoardRef.current;
+    if (!cur.id) return;
+    setSaveStatus('saving');
+    window.clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = window.setTimeout(async () => {
+      try {
+        const thumb = generateThumbnailDataUrl(nextElements);
+        await saveWhiteboard({
+          id: cur.id,
+          title: cur.title,
+          elements: cloneElements(nextElements),
+          thumbnail: thumb,
+        });
+        setSaveStatus('saved');
+      } catch (err) {
+        console.error('Autosave failed:', err);
+        setSaveStatus('idle');
+      }
+    }, 800);
+  }, []);
+
   // ---------- commit helpers ----------
   const commitElements = useCallback(
     (next) => {
@@ -77,8 +151,9 @@ export default function App() {
       elementsRef.current = cloned;
       historyRef.current.push(cloned);
       refreshUndo();
+      scheduleAutosave(cloned);
     },
-    [refreshUndo]
+    [refreshUndo, scheduleAutosave]
   );
 
   const handleAddElement = useCallback(
@@ -97,9 +172,11 @@ export default function App() {
 
   const handleLiveCommit = useCallback(() => {
     // Push the current live state as ONE undo step.
-    historyRef.current.push(cloneElements(elementsRef.current));
+    const cloned = cloneElements(elementsRef.current);
+    historyRef.current.push(cloned);
     refreshUndo();
-  }, [refreshUndo]);
+    scheduleAutosave(cloned);
+  }, [refreshUndo, scheduleAutosave]);
 
   const handleUndo = useCallback(() => {
     const prev = historyRef.current.undo();
@@ -108,8 +185,9 @@ export default function App() {
       elementsRef.current = prev;
       setSelectedId(null);
       refreshUndo();
+      scheduleAutosave(prev);
     }
-  }, [refreshUndo]);
+  }, [refreshUndo, scheduleAutosave]);
 
   const handleRedo = useCallback(() => {
     const next = historyRef.current.redo();
@@ -118,8 +196,9 @@ export default function App() {
       elementsRef.current = next;
       setSelectedId(null);
       refreshUndo();
+      scheduleAutosave(next);
     }
-  }, [refreshUndo]);
+  }, [refreshUndo, scheduleAutosave]);
 
   const handleClear = useCallback(() => {
     if (elementsRef.current.length === 0) {
@@ -136,9 +215,108 @@ export default function App() {
     commitElements([]);
   }, [clearLasso, commitElements]);
 
+  // ---------- Dashboard Actions ----------
+  const handleCreateBoard = useCallback(async () => {
+    const newBoard = {
+      id: 'wb_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      title: 'Untitled Whiteboard',
+      elements: [],
+      thumbnail: null,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    await saveWhiteboard(newBoard);
+    try {
+      window.localStorage.setItem('ivla_last_board_id', newBoard.id);
+    } catch {
+      /* ignore */
+    }
+    setCurrentBoardId(newBoard.id);
+    setCurrentBoardTitle(newBoard.title);
+    setElements([]);
+    elementsRef.current = [];
+    historyRef.current = createHistory(100);
+    historyRef.current.push([]);
+    refreshUndo();
+    setSaveStatus('saved');
+    setView('board');
+  }, [refreshUndo]);
+
+  const handleOpenBoard = useCallback(async (id) => {
+    const b = await getWhiteboard(id);
+    if (!b) {
+      showToast('Could not load that whiteboard');
+      return;
+    }
+    try {
+      window.localStorage.setItem('ivla_last_board_id', b.id);
+    } catch {
+      /* ignore */
+    }
+    setCurrentBoardId(b.id);
+    setCurrentBoardTitle(b.title || 'Untitled Whiteboard');
+    const loadedElements = b.elements || [];
+    setElements(cloneElements(loadedElements));
+    elementsRef.current = cloneElements(loadedElements);
+    historyRef.current = createHistory(100);
+    historyRef.current.push(cloneElements(loadedElements));
+    refreshUndo();
+    setSaveStatus('saved');
+    setView('board');
+  }, [refreshUndo, showToast]);
+
+  const handleRenameBoard = useCallback(async (id, newTitle) => {
+    const b = await getWhiteboard(id);
+    if (!b) return;
+    const updated = { ...b, title: newTitle, updatedAt: Date.now() };
+    await saveWhiteboard(updated);
+    if (currentBoardRef.current.id === id) {
+      setCurrentBoardTitle(newTitle);
+    }
+    const list = await getAllWhiteboards();
+    setWhiteboards(list);
+  }, []);
+
+  const handleDeleteBoard = useCallback(async (id) => {
+    await deleteWhiteboard(id);
+    try {
+      if (window.localStorage.getItem('ivla_last_board_id') === id) {
+        window.localStorage.removeItem('ivla_last_board_id');
+      }
+    } catch {
+      /* ignore */
+    }
+    const list = await getAllWhiteboards();
+    setWhiteboards(list);
+    showToast('Whiteboard deleted');
+  }, [showToast]);
+
+  const handleReturnToDashboard = useCallback(async () => {
+    // Flush pending save
+    if (saveTimerRef.current) {
+      window.clearTimeout(saveTimerRef.current);
+    }
+    const cur = currentBoardRef.current;
+    if (cur.id) {
+      const thumb = generateThumbnailDataUrl(elementsRef.current);
+      await saveWhiteboard({
+        id: cur.id,
+        title: cur.title,
+        elements: cloneElements(elementsRef.current),
+        thumbnail: thumb,
+      });
+    }
+    clearLasso();
+    setSelectedId(null);
+    const list = await getAllWhiteboards();
+    setWhiteboards(list);
+    setView('dashboard');
+  }, [clearLasso]);
+
   // ---------- keyboard ----------
   useEffect(() => {
     const onKey = (e) => {
+      if (view !== 'board') return;
       const mod = e.ctrlKey || e.metaKey;
       if (mod && e.key.toLowerCase() === 'z' && !e.shiftKey) {
         e.preventDefault();
@@ -147,7 +325,6 @@ export default function App() {
         e.preventDefault();
         handleRedo();
       } else if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId) {
-        // Don't hijack text input deletion (no text UI yet, but be safe).
         if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
         e.preventDefault();
         const next = elementsRef.current.filter((el) => el.id !== selectedId);
@@ -162,11 +339,10 @@ export default function App() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [handleUndo, handleRedo, selectedId, commitElements, clearLasso]);
+  }, [view, handleUndo, handleRedo, selectedId, commitElements, clearLasso]);
 
   // ---------- lasso ----------
   const handleLassoStart = useCallback(() => {
-    // Starting a new lasso clears the previous lasso + card.
     setLassoPath(null);
     setCapture(null);
   }, []);
@@ -196,17 +372,10 @@ export default function App() {
         setCapture(null);
         return;
       }
-      // Stored in App state so Phase 2 can send dataUrl to the backend.
       setCapture({ dataUrl: result.dataUrl, bounds: result.bounds, path: closed });
     },
     [showToast]
   );
-
-  const placeholderAI = useCallback(() => {
-    showToast('AI not connected yet (Phase 2)');
-    return Promise.resolve();
-  }, [showToast]);
-  void placeholderAI;
 
   const handleGradeChange = useCallback((g) => {
     setGradeLevel(g);
@@ -217,7 +386,6 @@ export default function App() {
     }
   }, []);
 
-  // Place a box RIGHT of the lasso bounds, or below it if there isn't room.
   const placeBox = useCallback((bounds, w, h) => {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
@@ -231,12 +399,10 @@ export default function App() {
       y = bounds ? bounds.y + bounds.h + 16 : 100;
     }
     x = Math.max(12, Math.min(Math.max(12, vw - w - 12), x));
-    y = Math.max(12, Math.min(Math.max(12, vh - h - 130), y)); // clear toolbar
+    y = Math.max(12, Math.min(Math.max(12, vh - h - 130), y));
     return { x, y };
   }, []);
 
-  // Add to board (image): normal image element scaled to ~360px wide,
-  // same placement rules. Select/erase/undo work like any other element.
   const handleAddImage = useCallback(
     (src, meta = null) => {
       if (!src) {
@@ -259,8 +425,7 @@ export default function App() {
     },
     [capture, commitElements, placeBox, showToast]
   );
-  // Add to board (text): normal text element, one undo step. Select can move
-  // it, Eraser removes it, undo/redo work like any other element.
+
   const handleAddText = useCallback(
     (text) => {
       const content = String(text || '').trim();
@@ -278,13 +443,88 @@ export default function App() {
     [capture, commitElements, placeBox, showToast]
   );
 
-  const canvasSizeNote = useMemo(() => null, []);
-  void canvasSizeNote;
+  if (view === 'loading') {
+    return (
+      <div className="ivla-root" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ color: '#64748b', fontSize: '14px', fontWeight: '600' }}>Loading IVLA...</div>
+      </div>
+    );
+  }
+
+  if (view === 'dashboard') {
+    return (
+      <Dashboard
+        whiteboards={whiteboards}
+        onCreateBoard={handleCreateBoard}
+        onOpenBoard={handleOpenBoard}
+        onRenameBoard={handleRenameBoard}
+        onDeleteBoard={handleDeleteBoard}
+      />
+    );
+  }
 
   return (
     <div className="ivla-root">
       <div className="ivla-top-line" aria-hidden="true" />
-      <div className="ivla-wordmark" aria-label="IVLA">
+
+      {/* Top Header with Return to Dashboard and Title */}
+      <div className="ivla-board-top-nav">
+        <button
+          type="button"
+          className="ivla-back-to-dashboard-btn"
+          onClick={handleReturnToDashboard}
+          aria-label="Return to Dashboard"
+          title="Return to Dashboard"
+        >
+          <ArrowLeft size={16} />
+          <span>Dashboard</span>
+        </button>
+
+        {isEditingTitle ? (
+          <input
+            type="text"
+            className="ivla-board-title-input"
+            value={currentBoardTitle}
+            onChange={(e) => setCurrentBoardTitle(e.target.value)}
+            onBlur={() => {
+              setIsEditingTitle(false);
+              handleRenameBoard(currentBoardId, currentBoardTitle.trim() || 'Untitled Whiteboard');
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                setIsEditingTitle(false);
+                handleRenameBoard(currentBoardId, currentBoardTitle.trim() || 'Untitled Whiteboard');
+              }
+            }}
+            autoFocus
+          />
+        ) : (
+          <div
+            className="ivla-board-title-badge"
+            onClick={() => setIsEditingTitle(true)}
+            title="Click to rename whiteboard"
+          >
+            <span>{currentBoardTitle}</span>
+            <Edit2 size={12} style={{ marginLeft: 6, opacity: 0.6 }} />
+          </div>
+        )}
+
+        <div className={`ivla-save-status${saveStatus === 'saving' ? ' is-saving' : ''}`}>
+          {saveStatus === 'saving' ? (
+            <>
+              <Cloud size={13} />
+              <span>Saving...</span>
+            </>
+          ) : (
+            <>
+              <Check size={13} />
+              <span>Saved</span>
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className="ivla-wordmark" style={{ top: 14, right: 20, left: 'auto' }} aria-label="IVLA">
         IVLA
       </div>
 
@@ -318,7 +558,6 @@ export default function App() {
         />
       )}
 
-      {/* Type-instead entry when the AI tool is active but nothing is circled. */}
       {tool === 'ai' && !capture && !typeOpen && (
         <button
           type="button"
