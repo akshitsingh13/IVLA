@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Toolbar from './components/Toolbar.jsx';
 import WhiteboardCanvas from './components/WhiteboardCanvas.jsx';
 import CapturePreview from './components/CapturePreview.jsx';
+import ExportPdfModal from './components/ExportPdfModal.jsx';
 import { createHistory } from './board/history.js';
 import { cloneElements, createText, createImage, layoutText, TEXT_MAX_WIDTH } from './board/elements.js';
 import { captureRegion, isValidLasso } from './board/lasso.js';
@@ -20,6 +21,7 @@ export default function App() {
   const [typeOpen, setTypeOpen] = useState(false); // type-instead with NO capture
   const [toast, setToast] = useState(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
   const [undoDepth, setUndoDepth] = useState(0); // bump to refresh disabled states
   const [gradeLevel, setGradeLevel] = useState(() => {
     try {
@@ -361,6 +363,16 @@ export default function App() {
         setShapeKind={setShapeKind}
         showOther={showOther}
         setShowOther={setShowOther}
+        onExportPdf={() => setShowExportModal(true)}
+      />
+
+      <ExportPdfModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        pages={[{ id: 'page-1', elements }]}
+        currentPageIndex={0}
+        whiteboardTitle="IVLA-Lesson"
+        notify={showToast}
       />
 
       {toast && (

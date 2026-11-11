@@ -770,3 +770,207 @@ body {
   padding: 6px;
   min-height: auto;
 }
+
+/* ---------- PDF Export Modal ---------- */
+.ivla-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: ivla-fade-in 0.15s ease-out;
+}
+
+.ivla-export-modal {
+  width: 440px;
+  max-width: 100%;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.ivla-export-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.ivla-export-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ivla-export-icon {
+  color: var(--ivla-accent);
+}
+
+.ivla-export-title-wrap h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.ivla-modal-close-btn {
+  background: transparent;
+  border: 0;
+  color: #64748b;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+}
+
+.ivla-modal-close-btn:hover:not(:disabled) {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.ivla-export-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ivla-export-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.ivla-export-field label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.ivla-export-field input[type="text"],
+.ivla-export-field select {
+  font-size: 13px;
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  outline: none;
+  background: #ffffff;
+  color: #1e293b;
+  transition: border-color 0.15s;
+}
+
+.ivla-export-field input[type="text"]:focus,
+.ivla-export-field select:focus {
+  border-color: var(--ivla-accent);
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
+}
+
+.ivla-export-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #f8fafc;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.ivla-radio-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #334155;
+  cursor: pointer;
+}
+
+.ivla-radio-option input[type="radio"] {
+  accent-color: var(--ivla-accent);
+}
+
+.ivla-range-input {
+  margin-top: 4px;
+}
+
+.ivla-export-row {
+  display: flex;
+  gap: 12px;
+}
+
+.ivla-export-progress-wrap {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ivla-export-progress-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ivla-accent);
+}
+
+.ivla-spinner {
+  animation: ivla-spin 1s linear infinite;
+}
+
+@keyframes ivla-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ivla-progress-track {
+  width: 100%;
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.ivla-progress-fill {
+  height: 100%;
+  background: var(--ivla-accent);
+  transition: width 0.2s ease-out;
+}
+
+.ivla-export-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 20px;
+  background: #f8fafc;
+  border-top: 1px solid #f1f5f9;
+}
+
+.ivla-export-confirm-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 8px;
+}
