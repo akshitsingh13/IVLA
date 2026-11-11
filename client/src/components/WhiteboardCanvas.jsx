@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { drawElement } from '../board/renderer.js';
+import { drawBackground } from '../board/backgrounds.js';
 import { createStroke, createShape, getElementBounds, moveElement } from '../board/elements.js';
 import { hitTestElement, hitTestElements } from '../board/hitTest.js';
 
@@ -19,6 +20,7 @@ const ACCENT = '#4f46e5'; // lasso accent (indigo)
  */
 export default function WhiteboardCanvas({
   elements,
+  background = 'white',
   tool,
   color,
   width,
@@ -37,6 +39,8 @@ export default function WhiteboardCanvas({
   const snapshotRef = useRef(null);
   const elementsRef = useRef(elements);
   elementsRef.current = elements;
+  const backgroundRef = useRef(background);
+  backgroundRef.current = background;
   const toolRef = useRef(tool);
   toolRef.current = tool;
   const lassoPathRef = useRef(lassoPath);
@@ -77,8 +81,7 @@ export default function WhiteboardCanvas({
     const { w, h } = sizeRef.current;
     const dpr = window.devicePixelRatio || 1;
     sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    sctx.fillStyle = '#ffffff';
-    sctx.fillRect(0, 0, w, h);
+    drawBackground(sctx, w, h, backgroundRef.current);
     for (const el of elementsRef.current) drawElement(sctx, el);
   };
 
@@ -89,22 +92,21 @@ export default function WhiteboardCanvas({
     const { w, h } = sizeRef.current;
     const dpr = window.devicePixelRatio || 1;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    // Base: white + cached snapshot.
+    // Base: background + cached snapshot.
     const snap = snapshotRef.current;
     if (snap && snap.width > 0) {
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, w, h);
+      drawBackground(ctx, w, h, backgroundRef.current);
       // snapshot is in device pixels; draw scaled back to CSS px.
       ctx.drawImage(snap, 0, 0, w, h);
     } else {
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, w, h);
+      drawBackground(ctx, w, h, backgroundRef.current);
     }
 
-    // In-progress pen stroke on top.
+    // In-progress pen/pencil/highlighter stroke on top.
     if (strokeRef.current && strokeRef.current.length > 0) {
       drawElement(ctx, {
         type: 'stroke',
+        toolType: strokeRef.current.toolType || 'pen',
         points: strokeRef.current,
         color: strokeRef.current.color || '#111',
         width: strokeRef.current.width || 4,
@@ -215,12 +217,12 @@ export default function WhiteboardCanvas({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Re-render snapshot whenever committed elements change.
+  // Re-render snapshot whenever committed elements or background change.
   useEffect(() => {
     refreshSnapshot();
     drawFrame();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [elements, lassoPath, selectedId]);
+  }, [elements, lassoPath, selectedId, background]);
 
   // Redraw when a board image finishes decoding (renderer caches Image
   // objects; without this a fresh image would wait for the next interaction).
@@ -297,8 +299,9 @@ export default function WhiteboardCanvas({
     const t = toolRef.current;
     const start = canvasPos(e.clientX, e.clientY);
 
-    if (t === 'pen') {
+    if (t === 'pen' || t === 'pencil' || t === 'highlighter') {
       strokeRef.current = [];
+      strokeRef.current.toolType = t;
       strokeRef.current.color = colorRef.current;
       strokeRef.current.width = widthRef.current;
       eachPointerPoint(e, (p, ev) => {
@@ -399,11 +402,12 @@ export default function WhiteboardCanvas({
     const cb = callbacksRef.current;
     const t = toolRef.current;
 
-    if (t === 'pen' && strokeRef.current) {
+    if ((t === 'pen' || t === 'pencil' || t === 'highlighter') && strokeRef.current) {
       const pts = strokeRef.current;
+      const toolType = pts.toolType || t;
       strokeRef.current = null;
       if (!cancelled && pts.length > 0) {
-        const el = createStroke(pts, pts.color || colorRef.current, pts.width || widthRef.current);
+        const el = createStroke(pts, pts.color || colorRef.current, pts.width || widthRef.current, toolType);
         cb.onAddElement(el);
       } else {
         drawFrame();
