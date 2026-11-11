@@ -104,17 +104,6 @@ export default function App() {
     getAllWhiteboards().then((boards) => {
       if (!isMounted) return;
       setWhiteboards(boards);
-      try {
-        const lastId = window.localStorage.getItem('ivla_last_board_id');
-        if (lastId && boards.some((b) => b.id === lastId)) {
-          const b = boards.find((x) => x.id === lastId);
-          loadBoardIntoState(b);
-          setView('board');
-          return;
-        }
-      } catch {
-        /* ignore */
-      }
       setView('dashboard');
     });
     return () => {
@@ -536,11 +525,6 @@ export default function App() {
       updatedAt: Date.now(),
     };
     await saveWhiteboard(newBoard);
-    try {
-      window.localStorage.setItem('ivla_last_board_id', newBoard.id);
-    } catch {
-      /* ignore */
-    }
     loadBoardIntoState(newBoard);
     refreshUndo();
     setView('board');
@@ -551,11 +535,6 @@ export default function App() {
     if (!b) {
       showToast('Could not load that whiteboard');
       return;
-    }
-    try {
-      window.localStorage.setItem('ivla_last_board_id', b.id);
-    } catch {
-      /* ignore */
     }
     loadBoardIntoState(b);
     refreshUndo();
@@ -576,13 +555,6 @@ export default function App() {
 
   const handleDeleteBoard = useCallback(async (id) => {
     await deleteWhiteboard(id);
-    try {
-      if (window.localStorage.getItem('ivla_last_board_id') === id) {
-        window.localStorage.removeItem('ivla_last_board_id');
-      }
-    } catch {
-      /* ignore */
-    }
     const list = await getAllWhiteboards();
     setWhiteboards(list);
     showToast('Whiteboard deleted');
