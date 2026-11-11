@@ -171,6 +171,11 @@ export default function App() {
       if (toolSettingsRef.current[tool]) {
         toolSettingsRef.current[tool].color = c;
       }
+      // If white is selected, persist across drawing tools (pen & pencil)
+      if (c && (c.toUpperCase() === '#FFFFFF' || c.toLowerCase() === '#ffffff')) {
+        if (toolSettingsRef.current.pen) toolSettingsRef.current.pen.color = c;
+        if (toolSettingsRef.current.pencil) toolSettingsRef.current.pencil.color = c;
+      }
     },
     [tool]
   );
@@ -207,7 +212,7 @@ export default function App() {
     saveTimerRef.current = window.setTimeout(async () => {
       try {
         const activeP = currentPages[currentPageIndexRef.current] || currentPages[0];
-        const thumb = generateThumbnailDataUrl(activeP?.elements || []);
+        const thumb = generateThumbnailDataUrl(activeP?.elements || [], activeP?.background || 'white');
         await saveWhiteboard({
           id: cur.id,
           title: cur.title,
@@ -542,7 +547,7 @@ export default function App() {
     const cur = currentBoardRef.current;
     if (cur.id) {
       const activeP = pagesRef.current[currentPageIndexRef.current] || pagesRef.current[0];
-      const thumb = generateThumbnailDataUrl(activeP?.elements || []);
+      const thumb = generateThumbnailDataUrl(activeP?.elements || [], activeP?.background || 'white');
       await saveWhiteboard({
         id: cur.id,
         title: cur.title,

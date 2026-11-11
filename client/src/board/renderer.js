@@ -74,26 +74,119 @@ export function renderAll(ctx, elements) {
 // --- strokes ---
 // Smoothing: quadratic curves through segment midpoints. This turns the
 // polyline into a smooth path instead of jagged straight segments.
-function drawStroke(ctx, points, color = '#111111', width = 4, toolType = 'pen') {
+
+function drawHighlighter(ctx, points, color, width) {
   if (!points || points.length === 0) return;
   ctx.save();
-
-  if (toolType === 'highlighter') {
-    ctx.globalAlpha = 0.38;
-    ctx.globalCompositeOperation = 'multiply';
-    ctx.lineCap = 'square';
-    ctx.lineJoin = 'bevel';
-  } else if (toolType === 'pencil') {
-    ctx.globalAlpha = 0.82;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-  } else {
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-  }
-
+  ctx.globalAlpha = 0.38;
   ctx.strokeStyle = color;
   ctx.fillStyle = color;
+  const strokeW = Math.max(4, width);
+  ctx.lineWidth = strokeW;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  if (points.length === 1) {
+    const p = points[0];
+    const r = strokeW / 2;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, Math.max(r, 0.5), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    return;
+  }
+
+  if (points.length === 2) {
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    ctx.lineTo(points[1].x, points[1].y);
+    ctx.stroke();
+    ctx.restore();
+    return;
+  }
+
+  ctx.beginPath();
+  ctx.moveTo(points[0].x, points[0].y);
+  const firstMid = mid(points[0], points[1]);
+  ctx.lineTo(firstMid.x, firstMid.y);
+  for (let i = 1; i < points.length - 1; i++) {
+    const nextMid = mid(points[i], points[i + 1]);
+    ctx.quadraticCurveTo(points[i].x, points[i].y, nextMid.x, nextMid.y);
+  }
+  const last = points[points.length - 1];
+  ctx.lineTo(last.x, last.y);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawPencil(ctx, points, color, width) {
+  if (!points || points.length === 0) return;
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  const baseW = Math.max(0.75, width * 0.85);
+
+  if (points.length === 1) {
+    const p = points[0];
+    const r = (baseW * pressureOf(p)) / 2;
+    ctx.globalAlpha = 0.65;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, Math.max(r, 0.5), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    return;
+  }
+
+  // Draw two passes for authentic graphite pencil look:
+  // Pass 1: Softer, slightly wider graphite halo
+  // Pass 2: Darker, finer core
+  const renderPass = (wMultiplier, alpha) => {
+    ctx.globalAlpha = alpha;
+    if (points.length === 2) {
+      ctx.lineWidth = Math.max(0.5, baseW * wMultiplier * pressureOf(points[1]));
+      ctx.beginPath();
+      ctx.moveTo(points[0].x, points[0].y);
+      ctx.lineTo(points[1].x, points[1].y);
+      ctx.stroke();
+      return;
+    }
+
+    for (let i = 1; i < points.length - 1; i++) {
+      const p0 = mid(points[i - 1], points[i]);
+      const p1 = mid(points[i], points[i + 1]);
+      const w = baseW * wMultiplier * pressureOf(points[i]);
+      ctx.lineWidth = Math.max(0.5, w);
+      ctx.beginPath();
+      ctx.moveTo(p0.x, p0.y);
+      ctx.quadraticCurveTo(points[i].x, points[i].y, p1.x, p1.y);
+      ctx.stroke();
+    }
+    const n = points.length;
+    const tailW = baseW * wMultiplier * pressureOf(points[n - 1]);
+    ctx.lineWidth = Math.max(0.5, tailW);
+    ctx.beginPath();
+    const m = mid(points[n - 2], points[n - 1]);
+    ctx.moveTo(m.x, m.y);
+    ctx.lineTo(points[n - 1].x, points[n - 1].y);
+    ctx.stroke();
+  };
+
+  renderPass(1.2, 0.40); // Softer outer graphite halo
+  renderPass(0.65, 0.55); // Sharper central graphite core
+  ctx.restore();
+}
+
+function drawPen(ctx, points, color, width) {
+  if (!points || points.length === 0) return;
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.globalAlpha = 1.0;
 
   if (points.length === 1) {
     const p = points[0];
@@ -137,6 +230,17 @@ function drawStroke(ctx, points, color = '#111111', width = 4, toolType = 'pen')
   ctx.lineTo(points[n - 1].x, points[n - 1].y);
   ctx.stroke();
   ctx.restore();
+}
+
+function drawStroke(ctx, points, color = '#111111', width = 4, toolType = 'pen') {
+  if (!points || points.length === 0) return;
+  if (toolType === 'highlighter') {
+    drawHighlighter(ctx, points, color, width);
+  } else if (toolType === 'pencil') {
+    drawPencil(ctx, points, color, width);
+  } else {
+    drawPen(ctx, points, color, width);
+  }
 }
 
 function mid(a, b) {

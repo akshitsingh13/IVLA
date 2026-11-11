@@ -1,5 +1,6 @@
 // Native IndexedDB storage layer for IVLA whiteboards.
-// Safe, robust, zero-dependency.
+import { renderAll } from '../board/renderer.js';
+import { drawBackground } from '../board/backgrounds.js';
 
 const DB_NAME = 'ivla_db';
 const DB_VERSION = 1;
@@ -107,9 +108,9 @@ export async function deleteWhiteboard(id) {
 }
 
 /**
- * Generate a lightweight thumbnail data URL for a board's elements.
+ * Generate a lightweight thumbnail data URL for a board's elements and background.
  */
-export function generateThumbnailDataUrl(elements) {
+export function generateThumbnailDataUrl(elements, background = 'white') {
   if (typeof document === 'undefined') return null;
   try {
     const canvas = document.createElement('canvas');
@@ -118,45 +119,18 @@ export function generateThumbnailDataUrl(elements) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
 
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    drawBackground(ctx, canvas.width, canvas.height, background);
 
     if (elements && elements.length > 0) {
       const vw = Math.max(window.innerWidth || 1200, 800);
       const vh = Math.max(window.innerHeight || 800, 600);
       const scale = Math.min(canvas.width / vw, canvas.height / vh);
+      ctx.save();
       ctx.scale(scale, scale);
-
-      // Lazy import or simple draw
-      for (const el of elements) {
-        if (el.type === 'stroke' && el.points) {
-          ctx.strokeStyle = el.color || '#111';
-          ctx.lineWidth = Math.max(1, (el.width || 4) * 0.7);
-          ctx.beginPath();
-          el.points.forEach((p, idx) => {
-            if (idx === 0) ctx.moveTo(p.x, p.y);
-            else ctx.lineTo(p.x, p.y);
-          });
-          ctx.stroke();
-        } else if (el.type === 'shape') {
-          ctx.strokeStyle = el.color || '#111';
-          ctx.lineWidth = Math.max(1, (el.width || 4) * 0.7);
-          if (el.shape === 'rect') {
-            ctx.strokeRect(Math.min(el.x1, el.x2), Math.min(el.y1, el.y2), Math.abs(el.x2 - el.x1), Math.abs(el.y2 - el.y1));
-          } else if (el.shape === 'ellipse') {
-            ctx.beginPath();
-            ctx.ellipse((el.x1 + el.x2) / 2, (el.y1 + el.y2) / 2, Math.abs(el.x2 - el.x1) / 2, Math.abs(el.y2 - el.y1) / 2, 0, 0, Math.PI * 2);
-            ctx.stroke();
-          } else {
-            ctx.beginPath();
-            ctx.moveTo(el.x1, el.y1);
-            ctx.lineTo(el.x2, el.y2);
-            ctx.stroke();
-          }
-        }
-      }
+      renderAll(ctx, elements);
+      ctx.restore();
     }
-    return canvas.toDataURL('image/jpeg', 0.6);
+    return canvas.toDataURL('image/jpeg', 0.7);
   } catch (err) {
     console.error('Thumbnail generation failed:', err);
     return null;

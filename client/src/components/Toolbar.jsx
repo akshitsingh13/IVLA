@@ -22,6 +22,7 @@ import { BACKGROUNDS } from '../board/backgrounds.js';
 
 const COLORS = [
   { name: 'Black', value: '#111111' },
+  { name: 'White', value: '#FFFFFF' },
   { name: 'Red', value: '#e5484d' },
   { name: 'Blue', value: '#2563eb' },
   { name: 'Green', value: '#16a34a' },
@@ -150,17 +151,21 @@ export default function Toolbar({
           {showOther && (
             <div className="ivla-popover" role="dialog" aria-label="Tool settings">
               <div className="ivla-swatches">
-                {(tool === 'highlighter' ? HIGHLIGHTER_COLORS : COLORS).map((c) => (
-                  <button
-                    key={c.value}
-                    type="button"
-                    className={`ivla-swatch${color === c.value ? ' is-active' : ''}`}
-                    style={{ background: c.value }}
-                    aria-label={c.name}
-                    aria-pressed={color === c.value}
-                    onClick={() => setColor(c.value)}
-                  />
-                ))}
+                {(tool === 'highlighter' ? HIGHLIGHTER_COLORS : COLORS).map((c) => {
+                  const isWhite = c.value.toUpperCase() === '#FFFFFF';
+                  const isActive = (color || '').toLowerCase() === c.value.toLowerCase();
+                  return (
+                    <button
+                      key={c.value}
+                      type="button"
+                      className={`ivla-swatch${isActive ? ' is-active' : ''}${isWhite ? ' ivla-swatch-white' : ''}`}
+                      style={{ background: c.value }}
+                      aria-label={c.name}
+                      aria-pressed={isActive}
+                      onClick={() => setColor(c.value)}
+                    />
+                  );
+                })}
               </div>
               <label className="ivla-slider-row">
                 <span>Width</span>

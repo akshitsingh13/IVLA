@@ -35,8 +35,11 @@ export default function WhiteboardCanvas({
   onLassoComplete,
 }) {
   const canvasRef = useRef(null);
-  // Cached snapshot of committed elements for 60fps in-progress rendering.
-  const snapshotRef = useRef(null);
+  // Cached dual-snapshot of committed elements for 60fps in-progress rendering and layer ordering:
+  // bgSnap: background + committed highlighters (underneath)
+  // fgSnap: committed foreground elements (pens, pencils, shapes, text, images) on transparent canvas
+  const bgSnapRef = useRef(null);
+  const fgSnapRef = useRef(null);
   const elementsRef = useRef(elements);
   elementsRef.current = elements;
   const backgroundRef = useRef(background);
@@ -49,7 +52,7 @@ export default function WhiteboardCanvas({
   selectedRef.current = selectedId;
 
   const activePointerRef = useRef(null); // pointerId currently drawing
-  const strokeRef = useRef(null); // in-progress pen points
+  const strokeRef = useRef(null); // in-progress pen/pencil/highlighter points
   const shapeStartRef = useRef(null); // { x, y }
   const shapeCurrentRef = useRef(null); // { x, y } live end
   const erasingRef = useRef(false);
@@ -75,14 +78,35 @@ export default function WhiteboardCanvas({
   const refreshSnapshot = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const snap = snapshotRef.current;
-    if (!snap) return;
-    const sctx = snap.getContext('2d');
     const { w, h } = sizeRef.current;
+    if (w <= 0 || h <= 0) return;
     const dpr = window.devicePixelRatio || 1;
-    sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    drawBackground(sctx, w, h, backgroundRef.current);
-    for (const el of elementsRef.current) drawElement(sctx, el);
+
+    // 1. Snapshot background + committed highlighters
+    const bgSnap = bgSnapRef.current;
+    if (bgSnap) {
+      const bgCtx = bgSnap.getContext('2d');
+      bgCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      drawBackground(bgCtx, w, h, backgroundRef.current);
+      for (const el of elementsRef.current) {
+        if (el?.type === 'stroke' && el?.toolType === 'highlighter') {
+          drawElement(bgCtx, el);
+        }
+      }
+    }
+
+    // 2. Snapshot foreground elements (pens, pencils, text, shapes, images)
+    const fgSnap = fgSnapRef.current;
+    if (fgSnap) {
+      const fgCtx = fgSnap.getContext('2d');
+      fgCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      fgCtx.clearRect(0, 0, w, h);
+      for (const el of elementsRef.current) {
+        if (!(el?.type === 'stroke' && el?.toolType === 'highlighter')) {
+          drawElement(fgCtx, el);
+        }
+      }
+    }
   };
 
   const drawFrame = () => {
@@ -92,27 +116,57 @@ export default function WhiteboardCanvas({
     const { w, h } = sizeRef.current;
     const dpr = window.devicePixelRatio || 1;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    // Base: background + cached snapshot.
-    const snap = snapshotRef.current;
-    if (snap && snap.width > 0) {
-      drawBackground(ctx, w, h, backgroundRef.current);
-      // snapshot is in device pixels; draw scaled back to CSS px.
-      ctx.drawImage(snap, 0, 0, w, h);
+
+    const bgSnap = bgSnapRef.current;
+    const fgSnap = fgSnapRef.current;
+
+    // 1. Base: background + committed highlighters
+    if (bgSnap && bgSnap.width > 0) {
+      ctx.drawImage(bgSnap, 0, 0, w, h);
     } else {
       drawBackground(ctx, w, h, backgroundRef.current);
+      for (const el of elementsRef.current) {
+        if (el?.type === 'stroke' && el?.toolType === 'highlighter') {
+          drawElement(ctx, el);
+        }
+      }
     }
 
-    // In-progress pen/pencil/highlighter stroke on top.
-    if (strokeRef.current && strokeRef.current.length > 0) {
+    // 2. In-progress highlighter stroke: drawn UNDERNEATH foreground elements
+    const activeStroke = strokeRef.current;
+    if (activeStroke && activeStroke.length > 0 && activeStroke.toolType === 'highlighter') {
       drawElement(ctx, {
         type: 'stroke',
-        toolType: strokeRef.current.toolType || 'pen',
-        points: strokeRef.current,
-        color: strokeRef.current.color || '#111',
-        width: strokeRef.current.width || 4,
+        toolType: 'highlighter',
+        points: activeStroke,
+        color: activeStroke.color || colorRef.current,
+        width: activeStroke.width || widthRef.current,
       });
     }
-    // Live shape preview.
+
+    // 3. Foreground committed elements (pens, pencils, shapes, text, images)
+    if (fgSnap && fgSnap.width > 0) {
+      ctx.drawImage(fgSnap, 0, 0, w, h);
+    } else {
+      for (const el of elementsRef.current) {
+        if (!(el?.type === 'stroke' && el?.toolType === 'highlighter')) {
+          drawElement(ctx, el);
+        }
+      }
+    }
+
+    // 4. In-progress pen or pencil stroke: drawn ON TOP of foreground elements
+    if (activeStroke && activeStroke.length > 0 && activeStroke.toolType !== 'highlighter') {
+      drawElement(ctx, {
+        type: 'stroke',
+        toolType: activeStroke.toolType || 'pen',
+        points: activeStroke,
+        color: activeStroke.color || colorRef.current,
+        width: activeStroke.width || widthRef.current,
+      });
+    }
+
+    // 5. Live shape preview
     if (shapeStartRef.current && shapeCurrentRef.current) {
       const s = shapeStartRef.current;
       const c = shapeCurrentRef.current;
@@ -205,9 +259,12 @@ export default function WhiteboardCanvas({
       const dpr = window.devicePixelRatio || 1;
       canvas.width = Math.round(w * dpr);
       canvas.height = Math.round(h * dpr);
-      if (!snapshotRef.current) snapshotRef.current = document.createElement('canvas');
-      snapshotRef.current.width = canvas.width;
-      snapshotRef.current.height = canvas.height;
+      if (!bgSnapRef.current) bgSnapRef.current = document.createElement('canvas');
+      bgSnapRef.current.width = canvas.width;
+      bgSnapRef.current.height = canvas.height;
+      if (!fgSnapRef.current) fgSnapRef.current = document.createElement('canvas');
+      fgSnapRef.current.width = canvas.width;
+      fgSnapRef.current.height = canvas.height;
       refreshSnapshot();
       drawFrame();
     };
@@ -363,7 +420,7 @@ export default function WhiteboardCanvas({
     if (e.pointerId !== activePointerRef.current) return;
     const cb = callbacksRef.current;
 
-    if (t === 'pen' && strokeRef.current) {
+    if ((t === 'pen' || t === 'pencil' || t === 'highlighter') && strokeRef.current) {
       eachPointerPoint(e, (p, ev) => {
         strokeRef.current.push({ x: p.x, y: p.y, pressure: pressureFor(ev) });
       });

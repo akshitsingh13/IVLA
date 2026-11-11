@@ -208,11 +208,25 @@ body {
   border: 2px solid #e5e7eb;
   cursor: pointer;
   padding: 0;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ivla-swatch:hover {
+  transform: scale(1.08);
+}
+
+.ivla-swatch.ivla-swatch-white {
+  border: 2px solid #cbd5e1;
 }
 
 .ivla-swatch.is-active {
   border-color: var(--ivla-navy);
   box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--ivla-navy);
+}
+
+.ivla-swatch.ivla-swatch-white.is-active {
+  border-color: var(--ivla-navy);
+  box-shadow: 0 0 0 2px #cbd5e1, 0 0 0 4px var(--ivla-navy);
 }
 
 .ivla-slider-row {
