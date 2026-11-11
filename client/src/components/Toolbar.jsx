@@ -9,6 +9,7 @@ import {
   CircleDashed,
   SlidersHorizontal,
   Palette,
+  FileDown,
   Undo2,
   Redo2,
   Trash2,
@@ -80,6 +81,7 @@ export default function Toolbar({
   setShowOther,
   background = 'white',
   setBackground,
+  onExportPdf,
 }) {
   const otherWrapRef = useRef(null);
   const bgWrapRef = useRef(null);
@@ -223,6 +225,8 @@ export default function Toolbar({
             }}
           />
         </div>
+
+        <ToolButton label="PDF" icon={FileDown} onClick={onExportPdf} ariaLabel="Export as PDF" />
 
         <div className="ivla-divider" aria-hidden="true" />
 
