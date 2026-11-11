@@ -1,6 +1,6 @@
 # IVLA — Interactive Visual Learning Assistant
 
-An intelligent digital whiteboard built for educators and learners that blends freehand drawing tools with AI-driven visual interpretation, automated conceptual explanations, Wikimedia Commons educational visual discovery, and generative illustration.
+An intelligent, multi-page educational whiteboard application built for educators and learners. IVLA seamlessly combines natural drawing tools, multi-board management, local IndexedDB persistence, customizable patterned backgrounds, and multi-page PDF export with multimodal AI visual interpretation, Wikimedia Commons educational diagram discovery, and generative illustration.
 
 ---
 
@@ -12,174 +12,239 @@ An intelligent digital whiteboard built for educators and learners that blends f
   - [Target Audience](#target-audience)
   - [Key Objectives](#key-objectives)
 - [Features](#features)
-  - [Whiteboard Canvas & Manipulation Engine](#whiteboard-canvas--manipulation-engine)
-  - [AI Selection Lasso & Region Capture](#ai-selection-lasso--region-capture)
-  - [Vision & Concept Interpretation](#vision--concept-interpretation)
-  - [Educational Conceptual Explanations](#educational-conceptual-explanations)
-  - [Wikimedia Commons Visual Discovery](#wikimedia-commons-visual-discovery)
-  - [Generative AI Illustrations (FLUX.2 & Pollinations)](#generative-ai-illustrations-flux2--pollinations)
-  - [Resilience, Rate Limiting & Quota Tracking](#resilience-rate-limiting--quota-tracking)
-- [Screenshots & Demo](#screenshots--demo)
+  - [1. Whiteboard Dashboard & Local Persistence](#1-whiteboard-dashboard--local-persistence)
+  - [2. Multi-Page Whiteboard Navigation](#2-multi-page-whiteboard-navigation)
+  - [3. Per-Page Whiteboard Backgrounds](#3-per-page-whiteboard-backgrounds)
+  - [4. Professional Drawing Tools & Layer Ordering](#4-professional-drawing-tools--layer-ordering)
+  - [5. Shapes, Selection & Canvas Manipulation](#5-shapes-selection--canvas-manipulation)
+  - [6. Multi-Page Vector PDF Export](#6-multi-page-vector-pdf-export)
+  - [7. AI Circle Selection & Region Capture](#7-ai-circle-selection--region-capture)
+  - [8. Multimodal Vision Reasoning (NVIDIA Nemotron)](#8-multimodal-vision-reasoning-nvidia-nemotron)
+  - [9. Educational Conceptual Explanations](#9-educational-conceptual-explanations)
+  - [10. Wikimedia Commons Educational Visual Discovery](#10-wikimedia-commons-educational-visual-discovery)
+  - [11. Generative AI Illustrations (FLUX.2 & Pollinations)](#11-generative-ai-illustrations-flux2--pollinations)
+  - [12. Resilience, Rate Limiting & Safety](#12-resilience-rate-limiting--safety)
+- [Screenshots & User Interface](#screenshots--user-interface)
 - [Technology Stack](#technology-stack)
+  - [Frontend](#frontend)
+  - [Backend](#backend)
+  - [Storage & Persistence](#storage--persistence)
+  - [External APIs & Services](#external-apis--services)
 - [Project Architecture](#project-architecture)
   - [Architecture Flow Diagram](#architecture-flow-diagram)
   - [Component Communication](#component-communication)
-- [Folder Structure](#folder-structure)
+- [Directory Structure](#directory-structure)
 - [Prerequisites](#prerequisites)
 - [Installation and Setup](#installation-and-setup)
   - [1. Clone Repository](#1-clone-repository)
   - [2. Install Dependencies](#2-install-dependencies)
   - [3. Configure Environment Variables](#3-configure-environment-variables)
-  - [4. Start Application in Development Mode](#4-start-application-in-development-mode)
-  - [5. Independent Service Startup (Optional)](#5-independent-service-startup-optional)
-- [Environment Variables](#environment-variables)
-- [Running the Project](#running-the-project)
+- [Running the Application](#running-the-application)
   - [Available Scripts](#available-scripts)
-  - [Verification & Probe Test Scripts](#verification--probe-test-scripts)
+  - [Running Both Frontend and Backend](#running-both-frontend-and-backend)
+  - [Running Services Independently](#running-services-independently)
+  - [Building for Production](#building-for-production)
+- [Environment Variables Reference](#environment-variables-reference)
 - [API Documentation](#api-documentation)
-  - [Health & Diagnostics](#health--diagnostics)
-  - [Interpretation & Explanation Endpoints](#interpretation--explanation-endpoints)
-  - [Visual Discovery (Wikimedia Commons)](#visual-discovery-wikimedia-commons)
-  - [AI Illustration Generation](#ai-illustration-generation)
-  - [Standardized Error Response](#standardized-error-response)
-- [Database Documentation](#database-documentation)
-- [Application Workflow](#application-workflow)
-  - [Workflow 1: Circling Board Content for Wikimedia Discovery](#workflow-1-circling-board-content-for-wikimedia-discovery)
-  - [Workflow 2: Generating Text Explanation & Board Placement](#workflow-2-generating-text-explanation--board-placement)
-  - [Workflow 3: Fallback Custom AI Illustration](#workflow-3-fallback-custom-ai-illustration)
-  - [Workflow 4: Type-Instead Workflow](#workflow-4-type-instead-workflow)
-- [Testing](#testing)
+- [User Guide](#user-guide)
+  - [Managing Whiteboards](#managing-whiteboards)
+  - [Working with Pages](#working-with-pages)
+  - [Choosing Backgrounds](#choosing-backgrounds)
+  - [Drawing, Erasing & Highlighting](#drawing-erasing--highlighting)
+  - [Exporting to PDF](#exporting-to-pdf)
+  - [Using the AI Circle & Visual Discovery](#using-the-ai-circle--visual-discovery)
 - [Troubleshooting](#troubleshooting)
-- [Deployment](#deployment)
-  - [Production Client Build](#production-client-build)
-  - [Backend Deployment](#backend-deployment)
-- [Contributing](#contributing)
-- [Roadmap & Future Improvements](#roadmap--future-improvements)
+- [Future Improvements](#future-improvements)
 - [License and Acknowledgements](#license-and-acknowledgements)
-- [Author & Contact](#author--contact)
 
 ---
 
 ## Project Overview
 
 ### Problem Statement
-During classroom and remote lessons, instructors frequently sketch concepts, write equations, or draw diagrams on whiteboards. When students struggle with a topic, instructors must either spend time hand-drawing complex diagrams from scratch, navigate away from the lesson to search Google or Wikipedia, or struggle to find licensed, high-resolution educational assets that fit the whiteboard context.
+During classroom instruction, tutoring, and technical presentations, educators frequently sketch diagrams, write formulas, and map out concepts on digital boards. When students encounter conceptual bottlenecks, instructors often face significant friction:
+1. They must spend precious lesson minutes hand-drawing intricate anatomical, physical, or algorithmic diagrams.
+2. They must leave the presentation to search search engines, sifting through low-quality, copyrighted, or distracting images.
+3. Traditional single-page whiteboards quickly run out of room, forcing instructors to wipe previous working steps.
+4. Lesson work is lost when the browser tab is closed or needs to be exported into clean handouts.
 
 ### Solution
-**IVLA (Interactive Visual Learning Assistant)** transforms the traditional whiteboard into an intelligent teaching surface. Teachers draw or write naturally on the digital canvas, circle any region of interest using the **AI Circle** tool, and IVLA instantly:
-1. Interprets handwriting, equations, and sketches using multimodal vision reasoning.
-2. Discovers accurate, high-resolution educational diagrams directly from **Wikimedia Commons** with complete attribution and licensing metadata.
-3. Formulates classroom-ready explanations, real-world examples, and comprehension check questions tailored to specific grade levels.
-4. Generates custom illustrations using generative diffusion models when no existing diagram suffices.
-5. Inserts selected visual cards or text elements seamlessly back onto the whiteboard as interactive canvas elements.
+**IVLA (Interactive Visual Learning Assistant)** unifies an educational digital whiteboard with automated visual retrieval and multimodal AI:
+- **Educator Dashboard & Persistence**: Create, organize, and revisit lessons stored safely in browser-native IndexedDB.
+- **Multi-Page Whiteboards**: Flip seamlessly between pages with live thumbnail strips, reordering, and independent per-page undo/redo histories.
+- **Pedagogical Backgrounds**: Switch instantly between Plain White, Cream, Soft Blue, Soft Green, Chalkboard Dark, Math Grid, Ruled Paper with margins, or Dotted Bullet-grids on a per-page basis.
+- **Classroom Drawing Suite**: Solid Pen, textured Pencil, and highlighter strokes that utilize `multiply` blend modes and behind-pen layer ordering to keep ink crisp.
+- **Multi-Page PDF Export**: One-click vector PDF generation in A4/A3, Landscape/Portrait, with configurable page ranges and faithful background preservation.
+- **AI Circle Selection**: Circle any hand-drawn sketch or formula; multimodal reasoning models interpret the concept and fetch verified, high-resolution **Wikimedia Commons** diagrams and pedagogical explanations ready to drop onto the board.
 
 ### Target Audience
-- **K-12 and Higher Education Teachers**: Enhancing classroom explanations on interactive displays, tablets, or laptops.
-- **Tutors and Online Instructors**: Sharing real-time instructional diagrams during screen shares.
-- **Students & Self-Learners**: Whiteboarding study concepts with real-time conceptual guidance and diagrams.
+- **K-12 & University Teachers**: Conducting interactive lectures on smartboards, tablets, or laptops.
+- **Online Tutors & Coaches**: Delivering remote lessons with clean visual illustrations and downloadable lesson notes.
+- **STEM Students & Self-Learners**: Whiteboarding derivations and study diagrams with immediate verification and visual reference.
 
 ### Key Objectives
-- **Zero Friction**: Eliminate context switching away from the active teaching canvas.
-- **Graceful Offline & Unconfigured Operation**: Canvas drawing, manipulation, and Wikimedia search work without requiring proprietary AI credentials.
-- **Responsible Licensing**: Every external visual brought onto the canvas preserves its Wikimedia Commons creator, license type, and original repository links.
-- **Safety & Cost Control**: In-flight deduplication, strict concurrency semaphores, per-request budget bounds, and rate limiters prevent API runaway costs and rate limit violations.
+- **Zero Lesson Interruption**: All discovery, drawing, and page navigation happen on the active canvas surface.
+- **Privacy & Local Ownership**: Whiteboard data lives locally on your machine via IndexedDB; no cloud database or user account is required.
+- **Responsible Open-Access Licensing**: All visual diagrams imported from Wikimedia Commons preserve their author attribution and Creative Commons licenses.
+- **Graceful Offline Capability**: Whiteboard sketching, backgrounds, pages, local storage, PDF export, and Wikimedia discovery function without requiring paid AI API keys.
 
 ---
 
 ## Features
 
-### Whiteboard Canvas & Manipulation Engine
-- **Typed Element Architecture**: The board state is modeled as an immutable list of typed objects (`stroke`, `shape`, `text`, `image`) rather than flat pixel bitmaps.
-- **Freehand Pen**: Quadratic midpoint curve smoothing with stylus pressure sensitivity.
-- **Shapes**: High-precision rendering of rectangles, ellipses, straight lines, and directional arrows.
-- **Color & Stroke Controls**: Multi-swatch color selector and variable stroke thickness slider.
-- **Select & Transform Tool**: Bounding-box hit detection to select elements, drag to reposition, and delete.
-- **Undo / Redo History**: 100-step history stack supporting standard keyboard shortcuts (`Ctrl+Z`, `Ctrl+Y`, `Ctrl+Shift+Z`).
-- **Board Clear**: Modal confirmation dialog preventing accidental canvas wipes with full undo recovery.
+### 1. Whiteboard Dashboard & Local Persistence
+- **Educator Dashboard**: Manage all your lesson whiteboards from a clean overview interface.
+- **Whiteboard Actions**: Create new whiteboards, open existing sessions, inline-rename titles, and delete boards with safety confirmations.
+- **Metadata & Previews**: Live preview thumbnails and relative timestamps ("Just now", "15m ago", "Yesterday").
+- **Local IndexedDB Persistence**: Built on a native, zero-dependency IndexedDB storage engine (`ivla_db` with `whiteboards` store). Entire whiteboard states—including all pages, strokes, shapes, and backgrounds—persist across page refreshes and browser restarts.
+- **Debounced Autosave**: Changes are batched and autosaved with an 800ms debounce following drawing commits. Autosave never fires during in-progress pointer movements, ensuring consistent 60 FPS drawing. Unsaved changes are automatically flushed when returning to the dashboard.
 
-### AI Selection Lasso & Region Capture
-- **AI Circle Tool**: Freehand lasso with marching-ants SVG overlay.
-- **Region Validation**: Enforces minimum enclosed boundary thresholds to prevent accidental clicks.
-- **Polygon Masking**: Canvas 2D composite clip masks elements strictly within the lasso boundary against a white background, generating an optimized PNG base64 data URL.
-- **Adaptive Card Placement**: Contextual dialogue card positioning beneath or alongside the circled region, staying within viewport bounds.
+### 2. Multi-Page Whiteboard Navigation
+- **Page Manager Dock**: Top-center pill control displaying `< Prev`, `Page X of Y`, `Next >`, and `+ New Page`.
+- **Live Miniature Thumbnails**: Expandable visual drawer featuring real-time mini-canvas previews of every page's exact drawing contents and background.
+- **Full Page Management**: Add blank pages, duplicate existing pages (deep-cloning all elements with unique identifiers), delete pages (safeguarded to ensure at least one page remains), and reorder pages up or down.
+- **Strictly Isolated Undo / Redo**: Each page maintains its own independent 100-step history stack. Undoing or redoing actions on Page 2 will never modify, overwrite, or corrupt Page 1.
 
-### Vision & Concept Interpretation
-- **Multimodal Vision Ingestion**: Sends the masked whiteboard crop to NVIDIA's reasoning vision model (`nvidia/nemotron-3.5-super-vl-120b-a12b`).
-- **Structured JSON Extraction**: Parses transcriptions, primary subject, core concepts, key terms, and visual elements.
-- **Tolerant Parsing & Low-Confidence Safeguards**: Strips markdown code blocks, extracts isolated JSON substrings, and gracefully falls back to editable text prompts if the content is ambiguous.
+### 3. Per-Page Whiteboard Backgrounds
+- **8 Tailored Styles**:
+  - `White`: Clean, crisp default canvas.
+  - `Cream`: Warm paper tone reducing eye fatigue during long lectures (`#fefcf3`).
+  - `Light Blue`: Calm pastel blue backdrop (`#f0f7ff`).
+  - `Light Green`: Soft chalkboard green tint (`#f0fdf4`).
+  - `Dark`: Modern slate dark mode (`#1e293b`).
+  - `Grid`: 32px math and coordinate engineering grid.
+  - `Ruled`: 36px ruled notebook lines with a left-hand red margin line at 72px.
+  - `Dotted`: 30px bullet-journal dot grid for geometry and freehand diagrams.
+- **Independent Configuration**: Backgrounds are assigned per-page. Page 1 can be a coordinate grid, Page 2 ruled notebook paper, and Page 3 dark mode.
+- **Seamless System Integration**: Selected backgrounds render accurately beneath drawings, appear inside live page thumbnails, are included in AI Circle region captures, and are preserved during PDF export.
 
-### Educational Conceptual Explanations
-- **Grade-Level Adaptation**: Configurable grade-level tuning (`auto`, `primary`, `middle`, `high`, `college`), persisted in browser `localStorage`.
-- **Pedagogical Structure**: Generates clear, age-appropriate conceptual explanations, real-world application examples, and quick comprehension check questions.
-- **Add to Board**: Teachers can commit generated explanation text directly onto the canvas as editable, selectable text columns.
+### 4. Professional Drawing Tools & Layer Ordering
+- **Solid Pen**: Quadratic midpoint curve smoothing with stylus pressure sensitivity for smooth, natural handwriting.
+- **Textured Pencil**: Graphite opacity (~82%) with fine line profile for technical sketching and preliminary work.
+- **Pedagogical Highlighter**: Semi-transparent strokes with `multiply` composite blending and round/chisel caps.
+  - **Behind-Pen Layer Ordering**: Highlighter strokes render beneath solid pen ink and shapes, ensuring handwriting and text remain completely legible under highlighted areas.
+  - **Highlighter Color Palette**: Vibrant neon swatches (Yellow `#facc15`, Green `#4ade80`, Cyan `#38bdf8`, Pink `#f472b6`, Orange `#fb923c`) and expanded thickness options (8px–48px).
+- **Per-Tool Memory**: Stroke widths and colors are remembered independently per tool when toggling between Pen, Pencil, and Highlighter.
 
-### Wikimedia Commons Visual Discovery
-- **Primary Visual Discovery Engine**: Integrates directly with the MediaWiki Action API (`commons.wikimedia.org/w/api.php`) without requiring API keys or OAuth authentication.
-- **Targeted Query Formulation**: Converts Nemotron's vision output into focused search queries prioritizing diagrams, cross-sections, and educational schematics.
-- **Lightweight Educational Ranking**: Scores and filters candidate media by format (SVG and PNG prioritized over bitmaps), image resolution, keyword proximity, and presence of educational qualifiers while filtering out non-diagram noise (portraits, coins, monuments, and PDFs).
-- **Attribution & Metadata Preservation**: Extracts thumbnail URLs, original high-res image URLs, description pages, creator credit, and license names (`CC BY-SA`, `CC0`, `Public domain`).
-- **One-Click Canvas Insertion**: Inserts chosen Commons diagrams directly into the canvas at proportional dimensions, retaining creator and license metadata.
+### 5. Shapes, Selection & Canvas Manipulation
+- **Geometric Shapes**: Draw high-precision Rectangles, Ellipses, Straight Lines, and Directional Arrows.
+- **Select & Transform Tool**: Bounding-box hit detection allows selecting any stroke, shape, text box, or inserted image to reposition or delete.
+- **Targeted Eraser**: Distance-threshold hit testing erases intersected strokes and shapes. Each continuous eraser stroke compiles into a single undo step.
+- **Rich Text & Image Elements**: Text boxes with multi-line layout and rescaled images can be positioned anywhere on the board.
 
-### Generative AI Illustrations (FLUX.2 & Pollinations)
-- **Secondary Creative Fallback**: Available when abstract concepts lack pre-existing diagrams or when custom pedagogical art is desired.
-- **Prompt Synthesis**: Translates detected concepts into detailed educational art prompts (`buildImagePrompt.js`).
-- **Dual-Provider Resilience**: Requests image generation from NVIDIA FLUX.2 Klein 4B (`black-forest-labs/flux.2-klein-4b`); automatically falls back to Pollinations AI on service unavailability or quota exhaustion.
+### 6. Multi-Page Vector PDF Export
+- **Client-Side Generation**: Uses `jspdf` to generate clean, high-resolution PDFs directly in the browser with zero backend dependency.
+- **Configurable Page Scope**:
+  - `All Pages`: Exports the entire multi-page whiteboard in sequence.
+  - `Current Page`: Exports only the currently viewed page.
+  - `Custom Range`: Supports syntax like `1-2, 4` to export select pages.
+- **Paper Formats & Orientations**:
+  - Formats: Standard A4 (`210 × 297 mm`) and Large A3 (`297 × 420 mm`).
+  - Orientations: Landscape (recommended for whiteboards) and Portrait.
+- **Visual Fidelity**: Faithful high-resolution rendering that preserves page backgrounds (colors, grids, ruled lines), drawings, shapes, images, and text with page-number footers.
+- **Export Modal**: Accessible dialog featuring document title input, page count indicators, a progress track, and an animated spinner during multi-page compilation.
 
-### Resilience, Rate Limiting & Quota Tracking
-- **Wikimedia Concurrency & Rate Limiting**: Internal 3-request semaphore, automatic handling of HTTP 429/503 `Retry-After` headers, and custom user-agent identification.
-- **In-Flight Deduplication & LRU Cache**: Memory cache storing up to 50 items; duplicate concurrent requests share single outbound promises to prevent double-click token waste.
-- **Session Usage Counter**: Endpoint `/api/usage` tracks session call counts.
-- **Strict Outbound Call Budget**: Enforces a maximum cap (4 calls per click) across retries to prevent unbounded billable loops.
+### 7. AI Circle Selection & Region Capture
+- **Intuitive Freehand Lasso**: Circle any equation, diagram, or handwriting with animated marching-ants feedback.
+- **Noise Masking**: Clamps region boundaries and clips surrounding board content to focus multimodal reasoning models strictly on the circled subject.
+- **Background-Aware Capture**: Detects content against non-white or patterned backgrounds, preventing false "empty circle" rejections.
+
+### 8. Multimodal Vision Reasoning (NVIDIA Nemotron)
+- **Model**: `nvidia/nemotron-3.5-super-vl-120b-a12b`.
+- **Reasoning Capabilities**: Accurately transcribes messy handwriting, chemical formulas, physics free-body diagrams, and math equations.
+- **Structured Extraction**: Returns normalized JSON identifying the core concept, key search terms, grade suitability, and visual structure.
+
+### 9. Educational Conceptual Explanations
+- **Adaptive Grade Levels**: Configurable target audience (`auto`, `primary`, `middle`, `high`, `college`), persisted across sessions.
+- **Pedagogical Structure**: Formulates concise concept definitions, real-world examples, and comprehension check questions.
+- **One-Click Insert**: "Add to board" places the generated explanation directly on the active canvas as an editable, selectable text block.
+
+### 10. Wikimedia Commons Educational Visual Discovery
+- **Free, Public Knowledge Engine**: Communicates directly with the MediaWiki Action API without requiring API keys or user accounts.
+- **Pedagogical Query Builder**: Synthesizes specific search queries targeting educational diagrams, schematics, and cross-sections.
+- **Intelligent SVG/PNG Ranking**: Prioritizes high-resolution vector graphics and labeled illustrations over photos, coins, or statues.
+- **Attribution & Licensing**: Displays author credits and license tags (`CC BY-SA 4.0`, `CC0`, `Public Domain`).
+- **Board Insertion**: Inserts chosen Commons diagrams into the active page, scaling them appropriately alongside your drawings.
+
+### 11. Generative AI Illustrations (FLUX.2 & Pollinations)
+- **Creative Fallback**: Generates custom illustrations when rare or abstract concepts lack existing Wikimedia diagrams.
+- **Dual-Provider Architecture**: Directs requests to NVIDIA FLUX.2 Klein 4B (`black-forest-labs/flux.2-klein-4b`) and automatically falls back to Pollinations AI if quotas are exceeded or credentials are absent.
+
+### 12. Resilience, Rate Limiting & Safety
+- **3-Request Concurrency Semaphore**: Prevents hammering external APIs during rapid interactions.
+- **In-Flight Deduplication & LRU Cache**: Avoids duplicate outbound requests for identical circled regions.
+- **Strict Outbound Budget**: Caps automatic retries to 4 calls per interaction to prevent runaway credit usage.
+- **Session API Meter**: Tracks usage stats accessible via `/api/usage`.
 
 ---
 
-## Screenshots & Demo
+## Screenshots & User Interface
 
-> *Note: Pre-recorded demo animations and screenshots are currently maintained externally. Below is an overview of the key visual interfaces:*
+```
++---------------------------------------------------------------------------------------+
+|  IVLA                               [ < ] [ Page 1 of 3 (click to view) ] [ > ] [+ New]  |
+|  [<- Dashboard]  Biology Lesson 1 [Edit]  (Saved)                                     |
++---------------------------------------------------------------------------------------+
+|                                                                                       |
+|      (Page 1: Ruled Paper)                 (Page 2: Math Grid)                        |
+|   +-----------------------+             +-----------------------+                     |
+|   |                       |             |       /\              |                     |
+|   |  - Mitosis steps      |             |      /  \             |                     |
+|   |  - Prophase diagram   |             |     /____\            |                     |
+|   |                       |             |                       |                     |
+|   +-----------------------+             +-----------------------+                     |
+|                                                                                       |
++---------------------------------------------------------------------------------------+
+|   [Select] [Pen] [Pencil] [Highlight] [Eraser] [Shape] [AI Circle] [Other] [Backdrop] [PDF] |
++---------------------------------------------------------------------------------------+
+```
 
-| Interface Component | Description |
-| :--- | :--- |
-| **Whiteboard Canvas** | Infinite-feel white drawing canvas with bottom-centered floating dock. |
-| **Tool Dock** | Tools: Select, Pen, Eraser, Shapes (Rect, Ellipse, Line, Arrow), AI Circle, Other (Palette/Width), Undo, Redo, Clear. |
-| **Capture Preview Card** | Floats beside the circled content with options to **Find visual** (Commons) or **Explain** (Text). |
-| **Visual Discovery Panel** | 2x2 grid displaying 4 top-ranked Wikimedia Commons diagrams, license tags, author credits, Commons page links, and "Insert" buttons. |
-| **Whiteboard Inserted Element** | Rescaled visual diagram placed adjacent to the circled concept, selectable and moveable. |
+| Component | Location | Description |
+| :--- | :--- | :--- |
+| **Dashboard** | Full View | Lists all saved whiteboards with thumbnails, timestamps, search, and delete options. |
+| **Top Navigation** | Top-Left | "Dashboard" return button, board title rename, and auto-save status indicator. |
+| **Page Manager** | Top-Center | Navigation pill (`<`, `>`, `New Page`) and expandable page drawer with live previews. |
+| **Canvas** | Center View | Infinite-feel 2D canvas with DPR scaling, background rendering, and drawing layers. |
+| **Floating Toolbar** | Bottom-Center | Accessible pill dock housing Pen, Pencil, Highlighter, Shapes, AI Circle, Backdrop, and PDF Export. |
+| **Capture Card** | Contextual | Dialog presenting multimodal interpretation, Wikimedia Commons diagrams, and explanations. |
+| **PDF Modal** | Modal Overlay | Configure document title, page scope (All/Current/Range), format (A4/A3), and orientation. |
 
 ---
 
 ## Technology Stack
 
 ### Frontend
-| Technology | Version / Spec | Role in IVLA |
+| Technology | Version | Purpose |
 | :--- | :--- | :--- |
-| **React** | `^18.3.1` | User interface, state management, and component lifecycle. |
-| **Vite** | `^5.4.11` | Frontend build tooling, Hot Module Replacement (HMR), and API proxy. |
-| **HTML5 Canvas API** | Native Canvas 2D | Low-latency whiteboard rendering, custom stroke smoothing, and element drawing. |
-| **Pointer Events API** | Native DOM | Multi-input handling (stylus pressure, touch, and mouse input). |
-| **Lucide React** | `^0.469.0` | Accessible toolbar, status, and navigation icons. |
+| **React** | `^18.3.1` | User interface, reactive state management, and component architecture. |
+| **Vite** | `^5.4.11` | Build tooling, Hot Module Replacement (HMR), and API reverse proxy. |
+| **HTML5 Canvas 2D** | Native DOM | 60 FPS drawing pipeline, quadratic curve smoothing, and composite masking. |
+| **Pointer Events API** | Native DOM | Unified handling of stylus pressure sensitivity, touch, and mouse input. |
+| **jsPDF** | `^4.2.1` | Client-side vector PDF document generation with multi-page support. |
+| **Lucide React** | `^0.469.0` | Accessible vector icons for toolbar, dashboard, and modals. |
 
 ### Backend
-| Technology | Version / Spec | Role in IVLA |
+| Technology | Version | Purpose |
 | :--- | :--- | :--- |
-| **Node.js** | `>= 18` (Verified on `v24.16.0`) | Backend JavaScript runtime environment. |
+| **Node.js** | `>= 18.0.0` (Tested on `v24.16.0`) | Backend JavaScript runtime. |
 | **Express** | `^4.21.2` | REST API routing and middleware management. |
 | **CORS** | `^2.8.5` | Cross-Origin Resource Sharing middleware. |
-| **express-rate-limit** | `^8.7.0` | IP-based request throttling on AI routes. |
-| **dotenv** | `^18.0.1` | Environment variable management from `.env`. |
+| **express-rate-limit** | `^8.7.0` | IP-based request throttling on AI endpoints. |
+| **dotenv** | `^18.0.1` | Environment variable loader from `server/.env`. |
 
-### Database
-- **No external database required**: IVLA is intentionally architected as a lightweight, privacy-first teaching tool. Whiteboard state lives in-memory on the client, and server-side caches use an in-process LRU cache.
-
-### Authentication & Security
-- **No user authentication required**: Runs without requiring user logins.
-- **Server-Side API Key Isolation**: Proprietary NVIDIA keys remain on the Node backend; client code never has access to credentials.
-
-### APIs & External Integrations
-| Service | Purpose | Authentication |
+### Storage & Persistence
+| System | Technology | Scope |
 | :--- | :--- | :--- |
-| **Wikimedia Commons (MediaWiki Action API)** | Primary educational diagram search, ranking, and retrieval. | **None** (Public API, custom User-Agent). |
-| **NVIDIA Cloud Functions / NIM API** | Vision analysis (`nemotron-3.5-super-vl`), explanations, and image generation (`flux.2-klein-4b`). | Bearer API Key (`NVIDIA_API_KEY`). |
-| **Pollinations AI** | High-availability fallback image generator. | **None** (Public GET API). |
+| **Whiteboard Storage** | Native **IndexedDB** (`ivla_db`) | Full lesson storage: multi-page arrays, elements, backgrounds, and thumbnails. |
+| **Lightweight Preferences** | `localStorage` | Active board ID, grade-level preference (`ivla-grade`). |
+| **Server Cache** | In-Memory LRU (50 items) | In-process SHA-256 request deduplication and response caching. |
+
+### External APIs & Services
+| Service | Role | Authentication |
+| :--- | :--- | :--- |
+| **Wikimedia Commons API** | Search and retrieval of educational diagrams and schematics. | **None** (Free MediaWiki Action API). |
+| **NVIDIA Cloud Functions / NIM** | Multimodal vision analysis (`nemotron-3.5-super-vl`) and FLUX.2 illustrations. | Bearer API Key (`NVIDIA_API_KEY`). |
+| **Pollinations AI** | High-availability fallback image generator. | **None** (Free public GET API). |
 
 ---
 
@@ -189,137 +254,149 @@ During classroom and remote lessons, instructors frequently sketch concepts, wri
 
 ```mermaid
 flowchart TD
-    User([Teacher / Student]) -->|Draws, Writes, Circles| Canvas[Whiteboard Canvas - HTML5 2D]
-    
-    subgraph Frontend ["Client Application (Vite + React :5173)"]
-        Canvas -->|Lasso Points & Polygon Mask| Lasso[Lasso Capture Engine]
-        Lasso -->|PNG Data URL + Bounds| Preview[CapturePreview Component]
-        Preview -->|Selects Action| ClientAPI[Client API Layer - ivlaApi.js]
-        VPanel[Visual Discovery Panel] -->|Insert Visual| Canvas
+    User([Teacher / Student]) -->|Interacts with UI| App[App.jsx - State Orchestrator]
+
+    subgraph Client ["Client Application (Vite + React :5173)"]
+        App --> Dashboard[Dashboard.jsx - Board Manager]
+        App --> PageMgr[PageManager.jsx - Multi-Page Strip]
+        App --> Canvas[WhiteboardCanvas.jsx - 2D Canvas]
+        App --> ToolDock[Toolbar.jsx - Tools & Backgrounds]
+        App --> ExportModal[ExportPdfModal.jsx - PDF Generator]
+
+        Dashboard <-->|Read / Write Boards| IDB[(IndexedDB - ivla_db)]
+        App -.->|Debounced Autosave (800ms)| IDB
+
+        Canvas -->|Render Background| BgEngine[backgrounds.js]
+        Canvas -->|Render Elements| Renderer[renderer.js]
+        Canvas -->|Circle Content| LassoEngine[lasso.js]
+        
+        ExportModal -->|Offscreen Render with Bg| PDFEngine[pdfExport.js - jsPDF]
+        
+        LassoEngine -->|PNG Crop + Mask| Preview[CapturePreview.jsx]
+        Preview -->|API Calls| ClientAPI[ivlaApi.js]
     end
 
-    ClientAPI -->|Vite Proxy /api| ExpressRouter[Express Server :3001]
+    ClientAPI -->|Proxy /api/*| ExpressServer[Express Server :3001]
 
-    subgraph Backend ["Server Application (Node.js + Express)"]
-        ExpressRouter --> RateLimit[Rate Limiter & In-Flight Dedup]
-        RateLimit --> TaskRouter{Requested Task}
-        
-        TaskRouter -->|/api/interpret| TaskInterp[Interpret Task]
-        TaskRouter -->|/api/explain| TaskExplain[Explain Task]
-        TaskRouter -->|/api/discover-*| TaskDiscover[Discover Visuals Task]
-        TaskRouter -->|/api/image-*| TaskImage[Generate Image Task]
+    subgraph Server ["Server Application (Node.js + Express)"]
+        ExpressServer --> RateLimiter[Rate Limiter & In-Flight Dedup]
+        RateLimiter --> TaskRouter{Endpoint Router}
 
-        TaskDiscover --> QueryBuilder[buildWikimediaQuery.js]
-        QueryBuilder --> WikiClient[Wikimedia API Client - 3-Req Semaphore]
-        WikiClient --> Ranking[Lightweight Educational Image Ranking]
+        TaskRouter -->|/api/discover-*| TaskDiscover[discoverVisuals.js]
+        TaskRouter -->|/api/interpret| TaskInterp[interpret.js]
+        TaskRouter -->|/api/explain| TaskExplain[explain.js]
+        TaskRouter -->|/api/image-*| TaskImage[generateImage.js]
 
-        TaskInterp --> NvidiaChat[NVIDIA Chat / Vision API]
+        TaskDiscover --> WikiClient[wikimedia.js - Semaphore]
+        TaskInterp --> NvidiaChat[nvidiaChat.js - Nemotron Vision]
         TaskExplain --> NvidiaChat
-        TaskImage --> NvidiaImg[NVIDIA FLUX.2 API]
-        NvidiaImg -.->|Fallback on error| Pollinations[Pollinations AI API]
+        TaskImage --> NvidiaImg[nvidiaImage.js - FLUX.2]
+        NvidiaImg -.->|Fallback on error| Pollinations[pollinations.js]
     end
 
     subgraph External ["External Services"]
-        WikiClient <-->|Action API gsrsearch| Wikimedia[(Wikimedia Commons)]
-        NvidiaChat <-->|OpenAI-compatible payload| NVNIM[(NVIDIA NIM / Nemotron)]
-        NvidiaImg <-->|Inference payload| NVFLUX[(NVIDIA FLUX)]
+        WikiClient <-->|MediaWiki API| Wikimedia[(Wikimedia Commons)]
+        NvidiaChat <-->|OpenAI-Compatible Payload| NVNIM[(NVIDIA NIM)]
+        NvidiaImg <-->|Inference| NVFLUX[(NVIDIA FLUX)]
         Pollinations <-->|HTTP GET| PollProvider[(Pollinations AI)]
     end
 
-    Ranking -->|Standardized Results| VPanel
-    TaskExplain -->|Explanation Markdown| Preview
+    WikiClient -->|Ranked Diagrams| Preview
+    TaskExplain -->|Markdown Explanation| Preview
 ```
 
 ### Component Communication
-1. **Client to Server**: The Vite client communicates with the backend Express server via a reverse proxy configured in [`client/vite.config.js`](file:///home/akshit/Documents/IVLA/client/vite.config.js) mapping `/api/*` to `http://localhost:3001`.
-2. **Backend to Wikimedia**: The backend executes HTTP queries against Wikimedia Commons Action API using a 3-concurrency semaphore, parses image extensions, runs lightweight ranking heuristics, and returns a normalized JSON response.
-3. **Backend to NVIDIA NIM**: Outbound calls to `https://integrate.api.nvidia.com/v1/chat/completions` pass base64 image data URLs for vision reasoning and return strictly structured JSON.
+1. **Client to Server**: Frontend requests to `/api/*` are reverse-proxied by Vite (`vite.config.js`) to `http://localhost:3001`.
+2. **Local Persistence**: All boards and pages are saved to the browser's native IndexedDB without any round-trip to an external database.
+3. **Backend to Wikimedia**: The backend queries `commons.wikimedia.org/w/api.php` via a 3-request concurrency semaphore with User-Agent identification.
+4. **Backend to NVIDIA NIM**: Vision crops are transmitted as base64 data URLs to `https://integrate.api.nvidia.com/v1/chat/completions`.
 
 ---
 
-## Folder Structure
+## Directory Structure
 
 ```
 IVLA/
 ├── .env.example                     # Environment template for server configuration
-├── package.json                     # Root orchestrator (npm run dev, install:all)
+├── package.json                     # Root scripts (npm run dev, build, install:all)
 ├── README.md                        # Project documentation
 │
 ├── client/                          # Frontend React + Vite application
 │   ├── index.html                   # HTML entry point with system fonts
-│   ├── package.json                 # Frontend dependencies (React, Lucide)
-│   ├── vite.config.js               # Vite config with backend API proxy
+│   ├── package.json                 # Frontend dependencies (React, jsPDF, Lucide)
+│   ├── package-lock.json            # Locked client dependency tree
+│   ├── vite.config.js               # Vite config with backend API proxy (/api -> :3001)
 │   └── src/
 │       ├── main.jsx                 # React root rendering
-│       ├── App.jsx                  # Main application state & whiteboard container
-│       ├── App.css                  # Modern UI styles, animations & responsive dock
+│       ├── App.jsx                  # Main application state, routing & autosave orchestrator
+│       ├── App.css                  # UI styling, animations, responsive docks, and modals
 │       ├── api/
-│       │   └── ivlaApi.js           # Client API layer & error normalization
+│       │   └── ivlaApi.js           # Client API wrappers with error normalization
 │       ├── board/
 │       │   ├── elements.js          # Typed element factory, bounding boxes, text layout
-│       │   ├── renderer.js          # Canvas 2D render pipeline & image cache
-│       │   ├── lasso.js             # Lasso polygon point capture & crop mask
-│       │   ├── hitTest.js           # Bounding-box hit detection for selection
-│       │   └── history.js           # 100-step immutable undo/redo history stack
+│       │   ├── renderer.js          # Canvas 2D render pipeline, stroke smoothing & image cache
+│       │   ├── backgrounds.js       # Background definitions (solid & patterns) & canvas renderers
+│       │   ├── lasso.js             # Lasso polygon point capture & background-aware crop mask
+│       │   ├── hitTest.js           # Hit testing for selection and targeted eraser
+│       │   └── history.js           # 100-step isolated undo/redo history stack
+│       ├── storage/
+│       │   └── db.js                # Native IndexedDB wrapper (ivla_db) & thumbnail generator
+│       ├── export/
+│       │   └── pdfExport.js         # Multi-page jsPDF export pipeline & aspect ratio calculator
 │       └── components/
+│           ├── Dashboard.jsx        # Whiteboard management dashboard with previews and search
+│           ├── PageManager.jsx      # Top page navigation dock & thumbnail drawer
 │           ├── WhiteboardCanvas.jsx # Interactive canvas component with pointer handlers
-│           ├── Toolbar.jsx          # Bottom floating action dock & tool controls
+│           ├── Toolbar.jsx          # Bottom floating tool dock, swatches, and backdrop picker
+│           ├── ExportPdfModal.jsx   # PDF export dialog (page scope, formats, orientation)
 │           ├── CapturePreview.jsx   # Contextual dialog card for AI actions
-│           └── VisualDiscoveryPanel.jsx # Wikimedia Commons image results grid
+│           └── VisualDiscoveryPanel.jsx # Wikimedia Commons image results grid with insert buttons
 │
 └── server/                          # Backend Express application
-    ├── index.js                     # Server entry point & middleware initialization
-    ├── package.json                 # Backend dependencies (Express, CORS, rate-limit)
-    ├── .env                         # Local environment variables (not committed)
+    ├── index.js                     # Express server entry point & middleware initialization
+    ├── package.json                 # Backend dependencies (Express, CORS, rate-limit, dotenv)
+    ├── .env                         # Server environment variables (local only, not committed)
     ├── .env.example                 # Environment template
     ├── config/
     │   └── models.js                # AI model IDs & external endpoint URLs
     ├── prompts/
-    │   ├── interpret.js             # Vision reader prompt for whiteboard crop
+    │   ├── interpret.js             # Vision prompt for handwriting & diagram recognition
     │   ├── explain.js               # Pedagogical explanation prompt by grade level
     │   └── imagePrompt.js           # Visual description prompt generator
     ├── tasks/
-    │   ├── interpret.js             # Vision interpretation task execution
-    │   ├── explain.js               # Explanation task execution
-    │   ├── buildWikimediaQuery.js   # Generates targeted educational search queries
-    │   ├── discoverVisuals.js       # Orchestrates Commons search and ranking
-    │   ├── buildImagePrompt.js      # Synthesizes prompt for generative models
-    │   └── generateImage.js         # Dispatches FLUX.2 with Pollinations fallback
+    │   ├── interpret.js             # Vision interpretation execution
+    │   ├── explain.js               # Explanation formulation task
+    │   ├── buildWikimediaQuery.js   # Targeted educational query generator
+    │   ├── discoverVisuals.js       # MediaWiki search and ranking coordinator
+    │   ├── buildImagePrompt.js      # Prompt synthesizer for diffusion models
+    │   └── generateImage.js         # FLUX.2 dispatcher with Pollinations fallback
     ├── providers/
-    │   ├── wikimedia.js             # MediaWiki API client, semaphore & ranking engine
-    │   ├── nvidiaChat.js            # NVIDIA OpenAI-compatible chat/vision client
+    │   ├── wikimedia.js             # MediaWiki client, semaphore & SVG/PNG ranking heuristics
+    │   ├── nvidiaChat.js            # NVIDIA OpenAI-compatible vision/text client
     │   ├── nvidiaImage.js           # NVIDIA FLUX image generation provider
     │   ├── pollinations.js          # Fallback image generation provider
     │   ├── withRetry.js             # Exponential backoff retry handler
     │   └── AiError.js               # Typed application error abstractions
     ├── lib/
     │   ├── cache.js                 # In-memory SHA-256 LRU cache (50 entries)
-    │   ├── rateLimit.js             # Express rate limiter configuration
+    │   ├── rateLimit.js             # IP-based request rate limiter
     │   ├── budget.js                # Per-click outbound call budget enforcer
     │   ├── usage.js                 # In-memory session API call counter
-    │   ├── validate.js              # Request payload validators
-    │   └── parseJson.js             # Resilient loose JSON parser & normalizers
-    └── scripts/
-        ├── smoke.js                 # Live end-to-end quota validation test
-        ├── probe-wikimedia-eval.js  # Phase 9 validation probe for Wikimedia discovery
-        ├── probe-wikimedia.js       # Standalone query & retrieval probe
-        ├── probe-step1.js           # Unit probe: Retry & validation checks
-        ├── probe-step2.js           # Unit probe: JSON parsing & budget checks
-        ├── probe-step3.js           # Unit probe: Explanation normalizer checks
-        ├── probe-step4.js           # Unit probe: In-memory cache & dedup checks
-        └── probe-step7.js           # Unit probe: Image extraction & prompt cleaning
+    │   └── validate.js              # Request payload validators
+    └── scripts/                     # Probe validation & diagnostic scripts
+        ├── probe-wikimedia-eval.js  # Live probe test for Wikimedia visual discovery
+        ├── probe-parse-tolerant.js  # Unit probe test for tolerant JSON parsing
+        └── probe-models.js          # NVIDIA model connectivity validator
 ```
 
 ---
 
 ## Prerequisites
 
-Before setting up IVLA, ensure your system meets the following prerequisites:
-
-- **Node.js**: Version `18.x` or higher (verified on Node `v24.16.0`).
-- **npm**: Version `9.x` or higher (verified on npm `11.13.0`).
-- **NVIDIA API Key** *(Optional)*: Required only for Nemotron vision interpretation and FLUX.2 image generation. Get an API key from [NVIDIA Build](https://build.nvidia.com).
-- **Web Browser**: Modern Chromium, Firefox, or Safari browser with HTML5 Canvas and Pointer Events support.
+- **Node.js**: `v18.0.0` or higher (verified on Node `v24.16.0`).
+- **npm**: `v9.0.0` or higher (verified on npm `11.13.0`).
+- **Modern Web Browser**: Chrome, Edge, Firefox, or Safari supporting HTML5 Canvas 2D, Pointer Events, and IndexedDB.
+- **NVIDIA Developer API Key (Optional)**: Required only for multimodal vision interpretation and NVIDIA explanations/illustrations. Whiteboards, backgrounds, multi-page, local storage, PDF export, and Wikimedia visual search operate without an API key.
 
 ---
 
@@ -327,477 +404,188 @@ Before setting up IVLA, ensure your system meets the following prerequisites:
 
 ### 1. Clone Repository
 ```bash
-git clone git@github.com:akshitsingh13/IVLA.git
+git clone https://github.com/akshitsingh13/IVLA.git
 cd IVLA
 ```
 
 ### 2. Install Dependencies
-Run the root setup command to install dependencies across the root, client, and server workspaces:
+Install root, client, and server dependencies in a single step using the root orchestrator:
 ```bash
 npm run install:all
 ```
-
-*Alternatively, install each workspace manually:*
-```bash
-npm install
-npm install --prefix client
-npm install --prefix server
-```
+*(Alternatively, install manually in each folder: `npm install && npm install --prefix client && npm install --prefix server`)*.
 
 ### 3. Configure Environment Variables
-Copy the `.env.example` file to create `server/.env`:
+Copy the environment template into `server/.env`:
 ```bash
 cp .env.example server/.env
 ```
-
-Open `server/.env` in your editor and configure your environment:
-```ini
+Open `server/.env` in your editor and configure your settings:
+```env
 PORT=3001
 NVIDIA_API_KEY=nvapi-your-key-here
 ```
-*(If you do not have an NVIDIA key, leave it empty or commented out. Whiteboard drawing and Wikimedia Commons discovery will still work seamlessly.)*
+> [!NOTE]
+> If you do not have an NVIDIA API key, leave `NVIDIA_API_KEY` empty. All whiteboard drawing, multi-page features, IndexedDB persistence, PDF export, and Wikimedia Commons searches will function normally.
 
-### 4. Start Application in Development Mode
-From the root repository directory, start both the client and server concurrently:
+---
+
+## Running the Application
+
+### Available Scripts
+
+Inspect the exact scripts defined in the root and subpackages:
+
+| Directory | Script Command | Description |
+| :--- | :--- | :--- |
+| **Root** | `npm start` | Concurrently launches backend Express (`:3001`) and frontend Vite (`:5173`). |
+| **Root** | `npm run dev` | Alias for `npm start` (runs both servers concurrently). |
+| **Root** | `npm run build` | Builds the client application for production (`client/dist`). |
+| **Root** | `npm run install:all` | Installs dependencies across root, client, and server. |
+| **Client** | `npm run dev --prefix client` | Runs Vite frontend development server on port `5173`. |
+| **Client** | `npm run build --prefix client` | Compiles frontend production assets into `client/dist`. |
+| **Client** | `npm run preview --prefix client` | Serves the production build locally for verification. |
+| **Server** | `npm run dev --prefix server` | Runs the Express backend server on port `3001`. |
+| **Server** | `npm run start --prefix server` | Starts the Express backend server (`node index.js`). |
+
+### Running Both Frontend and Backend
+From the repository root:
 ```bash
-npm run dev
+npm start
 ```
+Open your browser to **`http://localhost:5173`**.
 
-- **Frontend Client**: Open [http://localhost:5173](http://localhost:5173)
-- **Backend API**: Running on [http://localhost:3001](http://localhost:3001)
-- **Backend Health Check**: [http://localhost:3001/api/health](http://localhost:3001/api/health)
-
-### 5. Independent Service Startup (Optional)
-If you prefer running services in separate terminal sessions:
-
-**Terminal 1 (Backend Server):**
+### Running Services Independently
+In terminal 1 (Backend):
 ```bash
 cd server
 npm run dev
 ```
-
-**Terminal 2 (Frontend Client):**
+In terminal 2 (Frontend):
 ```bash
 cd client
 npm run dev
 ```
 
----
-
-## Environment Variables
-
-All environment variables are loaded by the backend server via `server/.env`:
-
-| Variable Name | Required | Default | Description |
-| :--- | :---: | :---: | :--- |
-| `PORT` | Optional | `3001` | Local port for Express API server. |
-| `NVIDIA_API_KEY` | Optional | *Empty* | NVIDIA Cloud Functions API key starting with `nvapi-`. Required for vision interpretation and FLUX.2 image generation. |
-| `SMOKE_BASE` | Optional | `http://localhost:3001` | Base URL used exclusively by the `server/scripts/smoke.js` test script. |
-| `NVIDIA_BASE_URL`| Optional | `https://integrate.api.nvidia.com/v1` | Override endpoint used for internal testing/mocking in `probe-models.js`. |
-
----
-
-## Running the Project
-
-### Available Scripts
-
-#### Root Directory (`/`)
-- `npm run dev`: Runs both client (`:5173`) and server (`:3001`) simultaneously using `concurrently`.
-- `npm run install:all`: Installs npm dependencies across root, `client/`, and `server/`.
-- `npm run build`: Compiles production assets for the client into `client/dist/`.
-- `npm run start`: Starts the Express backend server directly (`node server/index.js`).
-
-#### Client Directory (`/client`)
-- `npm run dev`: Starts the Vite development server with HMR on port `5173`.
-- `npm run build`: Compiles optimized production bundle into `client/dist/`.
-- `npm run preview`: Previews the production build locally.
-
-#### Server Directory (`/server`)
-- `npm run dev` or `npm start`: Starts the Express server (`node index.js`).
-
-### Verification & Probe Test Scripts
-The project includes a suite of standalone, deterministic probes in `server/scripts/` to verify modules without consuming API credits:
-
+### Building for Production
+To build the frontend client:
 ```bash
-# 1. Verify Wikimedia Commons Visual Discovery & 5 Key Educational Topics (Free, uses public API)
-node server/scripts/probe-wikimedia-eval.js
-
-# 2. Verify Retry handler & input validators (18 checks, offline)
-node server/scripts/probe-step1.js
-
-# 3. Verify Resilient JSON parser & outbound call budget (13 checks, offline)
-node server/scripts/probe-step2.js
-
-# 4. Verify Explanation normalizer (4 checks, offline)
-node server/scripts/probe-step3.js
-
-# 5. Verify In-memory cache & concurrent request deduplication (6 checks, offline)
-node server/scripts/probe-step4.js
-
-# 6. Verify Image extraction & prompt cleaning (18 checks, offline)
-node server/scripts/probe-step7.js
-
-# 7. Live end-to-end smoke test (Caution: Spends ~4 NVIDIA API credits if key is configured)
-node server/scripts/smoke.js
+npm run build
 ```
+Compiled production assets will be output to [`client/dist/`](file:///home/akshit/Documents/IVLA/client/dist).
+
+---
+
+## Environment Variables Reference
+
+| Variable | Scope | Required? | Default | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `PORT` | `server/.env` | Optional | `3001` | Local port on which the Express server listens. |
+| `NVIDIA_API_KEY` | `server/.env` | Optional | `""` | Bearer key for NVIDIA NIM (`nemotron-3.5-super-vl` and FLUX.2). |
 
 ---
 
 ## API Documentation
 
-All backend API routes are prefixed under `/api`.
+All server endpoints are exposed under `/api` and throttled by `express-rate-limit`:
 
-### Health & Diagnostics
-
-#### `GET /api/health`
-Checks whether the Express server is online and operational.
-- **Request**: No parameters.
-- **Response** (`200 OK`):
-  ```json
-  { "ok": true }
-  ```
-
-#### `GET /api/usage`
-Returns the count of NVIDIA API calls performed during the current server session.
-- **Response** (`200 OK`):
-  ```json
-  { "nvidiaCalls": 3 }
-  ```
+| Method | Endpoint | Request Payload | Response / Purpose |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/health` | None | `{ status: "ok", time, aiKeyConfigured: boolean }` |
+| `GET` | `/api/usage` | None | `{ calls: number, sessionStarted: ISOString }` |
+| `POST` | `/api/interpret` | `{ image: string (base64) }` | Vision interpretation of circled handwriting/diagrams into structured JSON concepts. |
+| `POST` | `/api/explain` | `{ concept, text, gradeLevel }` | Formulates structured pedagogical explanation, real-world application, and quiz check. |
+| `POST` | `/api/discover-from-image` | `{ image: string (base64) }` | Interprets drawing and searches Wikimedia Commons for ranked diagrams. |
+| `POST` | `/api/discover-from-text` | `{ text: string, subject? }` | Searches Wikimedia Commons directly for diagrams matching text queries. |
+| `POST` | `/api/image-from-image` | `{ image: string (base64) }` | Synthesizes custom illustration with FLUX.2 (Pollinations fallback). |
+| `POST` | `/api/image-from-text` | `{ text: string }` | Generates illustration directly from a text description. |
 
 ---
 
-### Interpretation & Explanation Endpoints
+## User Guide
 
-#### `POST /api/interpret`
-Extracts structured concepts and text from a circled whiteboard crop using multimodal vision.
-- **Request Body**:
-  ```json
-  {
-    "imageDataUrl": "data:image/png;base64,iVBORw0KGgo...",
-    "gradeLevel": "middle"
-  }
-  ```
-- **Response** (`200 OK`):
-  ```json
-  {
-    "interpretation": {
-      "contentType": "diagram",
-      "transcription": "H2O cycle",
-      "concept": "Water cycle",
-      "subject": "earth science",
-      "keyTerms": ["evaporation", "precipitation", "condensation"],
-      "visualElements": "Arrows showing evaporation from sea to clouds",
-      "confidence": 0.95
-    },
-    "lowConfidence": false
-  }
-  ```
+### Managing Whiteboards
+1. **Dashboard Overview**: Launching IVLA presents the **Dashboard** displaying all saved whiteboards with live thumbnail previews and relative modification dates.
+2. **Create a Board**: Click **"New Whiteboard"** to create a blank multi-page lesson.
+3. **Rename**: Click the pencil icon or title on any card (or the top header badge inside a board) to rename it.
+4. **Delete**: Click the trash icon on a board card to permanently delete it after confirmation.
+5. **Autosave**: Every stroke, shape, background, and page change is saved automatically to your browser's IndexedDB.
 
-#### `POST /api/explain`
-Generates an educational explanation, real-world example, and comprehension question for an interpreted concept.
-- **Request Body**:
-  ```json
-  {
-    "interpretation": {
-      "concept": "Photosynthesis",
-      "subject": "biology"
-    },
-    "gradeLevel": "middle"
-  }
-  ```
-- **Response** (`200 OK`):
-  ```json
-  {
-    "explanation": "Photosynthesis is the process where plants use sunlight, water, and carbon dioxide to make oxygen and energy in the form of sugar.",
-    "example": "A houseplant on your windowsill absorbing sunlight to grow green leaves.",
-    "checkQuestion": "What three things do plants need to start photosynthesis?"
-  }
-  ```
+### Working with Pages
+1. **Navigate**: Use `<` and `>` in the top-center pill dock to step through lesson pages.
+2. **Open Drawer**: Click **"Page X of Y"** to open the live thumbnail drawer.
+3. **Reorder**: Click the Up and Down arrows on any page card in the drawer to reorder pages.
+4. **Duplicate**: Click the Copy icon to clone a page, including all its drawings and background.
+5. **Delete**: Click the Trash icon on a page card to remove it (disabled if only one page remains).
+6. **Isolated Undo**: Undo (`Ctrl+Z`) and Redo (`Ctrl+Y`) affect only the active page.
 
----
+### Choosing Backgrounds
+1. Click the **"Backdrop"** icon (palette symbol) in the floating bottom toolbar.
+2. Select any background:
+   - **Solid**: White, Cream, Soft Blue, Soft Green, or Dark.
+   - **Patterns**: Math Grid, Ruled Paper (with margin line), or Dotted Grid.
+3. The background updates for the **current page only** and is saved with that page.
 
-### Visual Discovery (Wikimedia Commons)
+### Drawing, Erasing & Highlighting
+1. **Pen**: Solid ink with stylus pressure sensitivity.
+2. **Pencil**: Graphite-textured stroke with ~82% opacity.
+3. **Highlighter**: Translucent stroke with multiply blend mode. Highlighting over ink or diagrams keeps the lines sharp and clear beneath the color.
+4. **Tools Memory**: Adjusting width or color swatches updates and remembers settings for that specific tool.
+5. **Eraser**: Click or drag over any element to erase it. The entire stroke is undone in a single `Ctrl+Z` step.
+6. **Shapes**: Select Rect, Ellipse, Line, or Arrow to draw clean geometric figures.
 
-#### `POST /api/discover-from-image`
-Interprets a whiteboard image crop (or accepts pre-cached interpretation) and searches Wikimedia Commons for ranked educational diagrams.
-- **Request Body**:
-  ```json
-  {
-    "imageDataUrl": "data:image/png;base64,...",
-    "gradeLevel": "high",
-    "limit": 4,
-    "interpretation": { "concept": "Human heart", "subject": "biology" }
-  }
-  ```
-- **Response** (`200 OK`):
-  ```json
-  {
-    "interpretation": { "concept": "Human heart", "subject": "biology" },
-    "lowConfidence": false,
-    "query": "Human heart anatomical cross-section diagram",
-    "results": [
-      {
-        "id": "commons_26394292",
-        "title": "Diagram of the human heart.svg",
-        "thumbnailUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/03/Diagram_of_the_human_heart.svg/800px-Diagram_of_the_human_heart.svg.png",
-        "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/0/03/Diagram_of_the_human_heart.svg",
-        "pageUrl": "https://commons.wikimedia.org/wiki/File:Diagram_of_the_human_heart.svg",
-        "width": 659,
-        "height": 640,
-        "creator": "Wapcaplet",
-        "license": "CC BY-SA 3.0",
-        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
-        "attribution": "Diagram of the human heart.svg by Wapcaplet (CC BY-SA 3.0)",
-        "source": "Wikimedia Commons"
-      }
-    ],
-    "totalFound": 6
-  }
-  ```
+### Exporting to PDF
+1. Click the **"PDF"** button in the floating bottom dock.
+2. Select **Pages to Export**:
+   - `All Pages`: Compiles the full lesson notebook.
+   - `Current Page`: Exports only the active page.
+   - `Custom Range`: Specify pages (e.g. `1, 3-5`).
+3. Select **Page Size** (`A4` or `A3`) and **Orientation** (`Landscape` or `Portrait`).
+4. Click **"Download PDF"**. The generator creates a vector PDF that includes each page's specific background pattern and drawing elements.
 
-#### `POST /api/discover-from-text`
-Discovers Wikimedia Commons visuals directly from a typed concept without requiring an image capture.
-- **Request Body**:
-  ```json
-  {
-    "text": "Binary search",
-    "gradeLevel": "college",
-    "limit": 4
-  }
-  ```
-- **Response** (`200 OK`): Standardized visual discovery result payload matching the format above.
-
----
-
-### AI Illustration Generation
-
-#### `POST /api/image-from-image`
-Generates a custom synthetic illustration from an image crop using FLUX.2 (with Pollinations fallback).
-- **Request Body**:
-  ```json
-  {
-    "imageDataUrl": "data:image/png;base64,...",
-    "gradeLevel": "middle"
-  }
-  ```
-- **Response** (`200 OK`):
-  ```json
-  {
-    "interpretation": { "concept": "Gravity" },
-    "lowConfidence": false,
-    "imagePrompt": "A clean educational diagram illustrating gravity with an apple falling from a tree...",
-    "imageDataUrl": "data:image/png;base64,...",
-    "provider": "nvidia"
-  }
-  ```
-
-#### `POST /api/image-from-text`
-Generates a custom synthetic illustration from typed text input.
-- **Request Body**:
-  ```json
-  {
-    "text": "Water cycle",
-    "gradeLevel": "primary"
-  }
-  ```
-- **Response** (`200 OK`): Matching payload with generated `imageDataUrl` and `provider`.
-
----
-
-### Standardized Error Response
-When an error occurs, the server responds with a consistent JSON schema:
-```json
-{
-  "error": {
-    "code": "RATE_LIMIT",
-    "message": "Too many requests. Please wait a moment and try again.",
-    "canTypeInstead": true
-  }
-}
-```
-
-Common error codes: `BAD_INPUT`, `NOT_CONFIGURED`, `RATE_LIMIT`, `BUSY`, `NETWORK`, `BUDGET_EXCEEDED`, `BAD_RESPONSE`.
-
----
-
-## Database Documentation
-
-IVLA does **not** use a SQL or NoSQL database. 
-
-- **Client Board State**: Stored in React state and managed by an in-memory undo/redo history stack (`createHistory` in `client/src/board/history.js`).
-- **User Preferences**: The chosen grade level is persisted in the browser's `localStorage` (`ivla-grade`).
-- **Server Cache**: Maintained in an in-memory LRU map (`server/lib/cache.js`) with a maximum capacity of 50 entries keyed by SHA-256 hashes of the request parameters.
-- **Session Quota**: Stored in a lightweight in-memory counter (`server/lib/usage.js`).
-
----
-
-## Application Workflow
-
-### Workflow 1: Circling Board Content for Wikimedia Discovery
-1. The instructor selects the **AI Circle** tool from the toolbar.
-2. The instructor circles an illustration or handwriting (e.g., "Human Heart").
-3. The client captures and masks the circled polygon, generating a clean white-background crop.
-4. The **Capture Preview** card appears beside the selection with options to **Find visual** or **Explain**.
-5. Clicking **Find visual** dispatches `/api/discover-from-image`.
-6. The backend runs Nemotron vision reasoning, generates the search query `Human heart anatomical cross-section diagram`, and queries Wikimedia Commons.
-7. Top-ranked diagrams are displayed in the **Visual Discovery Panel** with thumbnails, creator credit, and license badges.
-8. The instructor clicks **Insert** on a diagram.
-9. The visual is added to the whiteboard adjacent to the circled area at proportional dimensions.
-
-### Workflow 2: Generating Text Explanation & Board Placement
-1. With content circled, the instructor selects **Explain**.
-2. The server interprets the concept and requests an educational explanation tailored to the selected grade level.
-3. The result card displays the explanation, real-world example, and a comprehension check question.
-4. The instructor clicks **Add to board**.
-5. The explanation is wrapped and placed directly on the canvas as an interactive text element.
-
-### Workflow 3: Fallback Custom AI Illustration
-1. If Wikimedia Commons yields no suitable diagrams for an abstract concept, the instructor clicks **Generate custom image**.
-2. The backend synthesizes an educational prompt and queries NVIDIA FLUX.2 Klein 4B.
-3. If NVIDIA NIM is unreachable or unconfigured, the system automatically falls back to Pollinations AI.
-4. The generated illustration is previewed in the card and can be inserted onto the canvas with one click.
-
-### Workflow 4: Type-Instead Workflow
-1. When no content is drawn, or if handwriting is difficult for the vision model to decipher, the user clicks **Type instead**.
-2. The user inputs any topic (e.g., "Binary search algorithm").
-3. The user can either find Commons visuals or generate text explanations without drawing anything on the board.
-
----
-
-## Testing
-
-IVLA employs modular testing scripts designed to verify subsystems independently:
-
-### Running Test Scripts
-All test scripts can be executed directly using Node.js:
-```bash
-# Evaluate Wikimedia Commons retrieval & ranking across 5 key educational topics
-node server/scripts/probe-wikimedia-eval.js
-
-# Test retry backoff and input validators
-node server/scripts/probe-step1.js
-
-# Test tolerant JSON parser & outbound call budget logic
-node server/scripts/probe-step2.js
-
-# Test explanation output normalizer
-node server/scripts/probe-step3.js
-
-# Test cache eviction & request deduplication
-node server/scripts/probe-step4.js
-
-# Test image extraction & prompt cleaning
-node server/scripts/probe-step7.js
-```
-
-### Adding New Tests
-- New probes should be placed in `server/scripts/` following the `probe-*.js` naming pattern.
-- Probes should exit with code `0` on success and code `1` on assertion failure.
-- Avoid network-dependent tests in unit probes unless testing an external integration specifically.
+### Using the AI Circle & Visual Discovery
+1. Click **"AI Circle"** in the toolbar.
+2. Draw a loop around any sketch, equation, or handwritten phrase.
+3. In the dialog card that appears beside your circle:
+   - Click **"Find visual"**: Fetches high-resolution educational diagrams from Wikimedia Commons. Click **"Insert"** on any diagram to place it directly onto the board.
+   - Click **"Explain"**: Formulates a pedagogical explanation adapted to your selected grade level. Click **"Add to board"** to insert the explanation as a selectable text block.
 
 ---
 
 ## Troubleshooting
 
-### 1. `AI key: missing` on Server Startup
-- **Symptom**: Terminal displays `[IVLA server] listening on http://localhost:3001` followed by `AI key: missing`.
-- **Cause**: `server/.env` is missing or `NVIDIA_API_KEY` is empty.
-- **Resolution**:
-  1. Ensure `server/.env` exists (`cp .env.example server/.env`).
-  2. Set `NVIDIA_API_KEY=nvapi-...` without quotation marks.
-  3. Note: The whiteboard and Wikimedia Visual Discovery work completely without an API key.
+### Port Conflicts
+- **Symptom**: `Error: listen EADDRINUSE: address already in use :::3001`.
+- **Solution**: Set `PORT=3002` in `server/.env`. Vite will automatically route requests to the new port.
 
-### 2. Port Conflicts (`EADDRINUSE: 3001` or `5173`)
-- **Symptom**: Server or client crashes on launch with `address already in use`.
-- **Resolution**:
-  - For server: Specify an alternative port via environment variable:
-    ```bash
-    PORT=3002 npm run dev
-    ```
-  - For client: Vite will automatically prompt to use the next available port (e.g., `5174`).
+### Missing or Invalid NVIDIA API Key
+- **Symptom**: `API error: NVIDIA_API_KEY is not configured on the server`.
+- **Solution**: You can continue using drawing tools, backgrounds, pages, local storage, PDF export, and Wikimedia Commons search without an API key. For AI vision interpretation, obtain a free developer key at [build.nvidia.com](https://build.nvidia.com) and add it to `server/.env`.
 
-### 3. Missing Dependencies or Rollup Build Errors
-- **Symptom**: `Rollup failed to resolve import "lucide-react"` or similar module error.
-- **Resolution**: Ensure all nested package dependencies are installed by running:
-  ```bash
-  npm run install:all
-  ```
+### Canvas Drawing / Touch Latency
+- **Solution**: IVLA uses standard HTML5 2D Canvas with pointer capture and coalesced events (`getCoalescedEvents`) to eliminate lag and jagged curves. Ensure hardware acceleration is enabled in your browser settings.
 
-### 4. Broken Images in Visual Discovery
-- **Symptom**: An image card in the discovery panel displays "Image preview unavailable".
-- **Resolution**: Certain Wikimedia Commons files use formats unsupported for direct web rasterization (e.g. multi-page DjVu). IVLA's ranking automatically filters these, and the UI provides a fallback placeholder while allowing the instructor to view the asset via the external "Page" link.
+### IndexedDB Storage Warnings / Private Browsing
+- **Symptom**: Boards do not persist after closing browser.
+- **Solution**: Private / Incognito browsing modes isolate or clear IndexedDB when windows close. Use standard browsing mode for persistent whiteboard storage.
+
+### PDF Export Generation Timeout on Large Boards
+- **Solution**: When exporting dozens of high-density pages simultaneously, keep the tab active. A progress bar will track each page as it renders offscreen.
 
 ---
 
-## Deployment
+## Future Improvements
 
-### Production Client Build
-To build the frontend client for production:
-```bash
-npm run build
-```
-This generates optimized static HTML, CSS, and JavaScript bundles in `client/dist/`.
-
-### Backend Deployment
-1. Set production environment variables (`PORT`, `NVIDIA_API_KEY`, `NODE_ENV=production`).
-2. Serve static client files directly from Express or place an NGINX / Cloudflare reverse proxy in front:
-   ```javascript
-   // Optional: Serve client build from Express in production
-   app.use(express.static(path.join(__dirname, '../client/dist')));
-   ```
-3. Run the server using a process manager such as `pm2`:
-   ```bash
-   pm2 start server/index.js --name ivla-server
-   ```
-
----
-
-## Contributing
-
-Contributions to IVLA are welcome! Follow these steps to contribute:
-
-1. **Fork the Repository**: Create a personal fork on GitHub.
-2. **Create a Feature Branch**:
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-3. **Adhere to Code Conventions**:
-   - Maintain clean modular architecture (keep board canvas logic separated from AI service tasks).
-   - Never commit `.env` or hardcoded credentials.
-   - Ensure elements added to the canvas adhere to the typed element schema in `client/src/board/elements.js`.
-4. **Verify Functionality**:
-   - Run the client build: `npm run build --prefix client`.
-   - Run verification probes: `node server/scripts/probe-wikimedia-eval.js`.
-5. **Submit a Pull Request**: Provide a clear description of changes, motivation, and test results.
-
----
-
-## Roadmap & Future Improvements
-
-Based on documented project notes and codebase comments:
-
-- [ ] **Canvas Zoom & Pan**: Support navigation across an expanded whiteboard canvas area.
-- [ ] **Multi-Image Canvas Selection**: Allow moving and grouping multiple whiteboard elements simultaneously.
-- [ ] **Vector SVG Path Import**: Parse simple SVG vector paths directly into native whiteboard stroke elements.
-- [ ] **Whiteboard Export**: Export board sessions to PNG, SVG, or PDF formats.
-- [ ] **Session Persistence**: Optional local storage or file-based session saving and loading.
+- [ ] **Real-Time Collaboration**: Multi-user drawing and cursor presence via WebSocket rooms.
+- [ ] **Canvas Zoom & Infinite Pan**: Viewport transformation matrix for boundless mind-mapping.
+- [ ] **Audio Voice Notes**: Attach voice explanations to whiteboard pages.
+- [ ] **Cloud Drive Export**: Direct sync with Google Drive, OneDrive, or Google Classroom.
 
 ---
 
 ## License and Acknowledgements
 
-### License
-This repository currently does not include a standalone `LICENSE` file. All rights are reserved by the repository owner unless explicitly licensed otherwise. For open-source or institutional distribution inquiries, please contact the maintainer.
-
-### Acknowledgements
-- **Wikimedia Commons**: For providing access to an open repository of educational diagrams and media via the MediaWiki Action API.
-- **NVIDIA NIM**: For powering multimodal vision reasoning (`nemotron-3.5-super-vl-120b-a12b`) and image generation (`flux.2-klein-4b`).
-- **Pollinations AI**: For providing a resilient, free fallback for generative illustrations.
-- **Lucide Icons**: For clean and accessible interface icons.
-
----
-
-## Author & Contact
-
-- **Author / Maintainer**: [Akshit Singh](https://github.com/akshitsingh13)
-- **Repository**: [https://github.com/akshitsingh13/IVLA](https://github.com/akshitsingh13/IVLA)
+- **License**: MIT License. Open source and free for educational and commercial use.
+- **Wikimedia Commons**: Educational visual media retrieved via the [MediaWiki Action API](https://commons.wikimedia.org/w/api.php) under Creative Commons licenses (`CC BY-SA`, `CC0`, `Public Domain`).
+- **NVIDIA AI**: Multimodal reasoning powered by NVIDIA NIM foundation models.
+- **Icons**: [Lucide Icons](https://lucide.dev/).
